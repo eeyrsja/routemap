@@ -18,6 +18,7 @@ let isAddingWaypoint = false;
 let isAddingStart = false;
 let isAddingEnd = false;
 let pointId = 0;
+let waypointCounter = 0; // Added counter for waypoint labels
 
 // Adjust canvas size
 function resizeCanvas() {
@@ -54,8 +55,8 @@ function handleCanvasClick(event) {
     }
 
     if (isAddingWaypoint) {
-        const label = prompt('Enter a label for this waypoint:');
-        const waypoint = { id: pointId++, x, y, label: label || `WP${pointId}` };
+        waypointCounter++; // Increment waypoint counter
+        const waypoint = { id: pointId++, x, y, label: waypointCounter.toString() }; // Assign label as a number
         waypoints.push(waypoint);
         drawPoint(waypoint, 'blue');
         isAddingWaypoint = false;
@@ -90,6 +91,7 @@ resetBtn.addEventListener('click', () => {
     startPoint = null;
     endPoint = null;
     pointId = 0;
+    waypointCounter = 0; // Reset waypoint counter
     redrawAll();
 });
 
@@ -200,15 +202,51 @@ function drawRoute(path) {
     ctx.strokeStyle = 'yellow';
     ctx.lineWidth = 2;
     ctx.beginPath();
+    let distances = []; // Array to store distances between points
     for (let i = 0; i < path.length; i++) {
         const point = getPointById(path[i]);
         if (i === 0) {
             ctx.moveTo(point.x, point.y);
         } else {
             ctx.lineTo(point.x, point.y);
+
+            // Calculate distance between this point and the previous point
+            const prevPoint = getPointById(path[i - 1]);
+            const dist = Math.hypot(point.x - prevPoint.x, point.y - prevPoint.y);
+            distances.push(dist);
         }
     }
     ctx.stroke();
+
+    // If there are distances to scale
+    if (distances.length > 0) {
+        // Scale distances so that the first leg is 100
+        const firstDistance = distances[0];
+        const scaledDistances = distances.map(dist => {
+            return (dist / firstDistance) * 100;
+        });
+
+        // Display the scaled distances along the route
+        for (let i = 1; i < path.length; i++) {
+            const startPt = getPointById(path[i - 1]);
+            const endPt = getPointById(path[i]);
+
+            // Calculate midpoint for displaying the distance
+            const midX = (startPt.x + endPt.x) / 2;
+            const midY = (startPt.y + endPt.y) / 2;
+
+            // Display the scaled distance as an integer
+            const scaledDist = Math.round(scaledDistances[i - 1]);
+
+            // Add a background rectangle for better readability
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(midX - 10, midY - 15, 30, 20);
+
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.fillText(scaledDist.toString(), midX - 5, midY);
+        }
+    }
 }
 
 // Helper function to get point by id
