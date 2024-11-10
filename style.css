@@ -1,0 +1,80 @@
+/* General Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: Arial, sans-serif;
+}
+
+h2 {
+    margin: 10px 0;
+}
+
+#imageUpload {
+    margin: 10px 0;
+}
+
+/* Map Container */
+#mapContainer {
+    width: 100%;
+    max-width: 390px; /* iPhone 12 Pro width */
+    height: calc(100vh - 250px); /* Adjust based on other elements' height */
+    position: relative;
+    border: 2px solid #333;
+}
+
+#mapCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Controls */
+#controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+button {
+    margin: 5px;
+    padding: 10px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:active {
+    background-color: #00408d;
+}
+
+/* Waypoints */
+.waypoint {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: blue;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.start-point {
+    background-color: green;
+}
+
+.end-point {
+    background-color: red;
+}
