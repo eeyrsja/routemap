@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chameleon Route Planner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <h2>Chameleon Graphical Planner</h2>
+        <input type="file" id="imageUpload" accept="image/*">
+        <div id="mapContainer">
+            <canvas id="mapCanvas"></canvas>
+        </div>
+        <div id="controls">
+            <button id="addWaypoint">Add Waypoint</button>
+            <button id="startRoute">Add Start Point</button>
+            <button id="endRoute">Add End Point</button>
+            <button id="calculateRoute">Calculate Shortest Route</button>
+            <button id="reset">Reset</button>
+            <button id="save">Save Route</button>
+            <button id="load">Load Route</button>
+        </div>
+    </div>
+    <script src="graphical.js"></script>
+</body>
+</html>
