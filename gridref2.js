@@ -202,7 +202,7 @@ export function drawMap(route) {
     if (map) {
         map.remove();  // Clear existing map
     }
-    map = L.map('map').setView([route[0].lat, route[0].lon], 13);  // Center on start position
+    map = L.map('map').setView([route[0][0], route[0][1], 13);  // Center on start position
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
