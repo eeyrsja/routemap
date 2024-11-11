@@ -130,12 +130,12 @@ function findOptimalRoute() {
             end: document.getElementById("end").value,
             waypoints: Array.from(document.querySelectorAll(".waypoint-row input[type='text']")).map(input => input.value)
         };
-        console.log("Locations for route optimization:", locations); // Log all locations
+        console.log("Locations for route optimization:", locations);
 
         const coords = {};
         const nodes = ["start", ...locations.waypoints.map((_, i) => String.fromCharCode(65 + i)), "lunch", "end"];
 
-        // Convert locations to lat/lon coordinates
+        // Convert each location to lat/lon coordinates
         nodes.forEach(node => {
             const ref = node === "start" ? locations.start : 
                         node === "end" ? locations.end : 
@@ -151,29 +151,31 @@ function findOptimalRoute() {
             nodes.forEach((to) => {
                 if (from !== to && coords[from] && coords[to]) {
                     distances[from][to] = haversine(...coords[from], ...coords[to]);
-                    console.log(`Distance from ${from} to ${to}:`, distances[from][to]); // Log calculated distance
+                    console.log(`Distance from ${from} to ${to}:`, distances[from][to]);
                 }
             });
         });
 
-        // Held-Karp Dynamic Programming Algorithm with Lunch Constraint
+        // Held-Karp algorithm with the lunch constraint
         const dp = {};
         const backtrack = {};
         const n = nodes.length;
 
-        // Initialize the dp array
+        // Initialize the dp table with the starting point
         dp[(1 << nodes.indexOf("start")) + nodes.indexOf("start")] = 0;
 
         for (let subsetSize = 2; subsetSize < n; subsetSize++) {
             for (const subset of combinations(nodes.slice(1), subsetSize)) {
-                const bits = subset.reduce((a, b) => a | (1 << nodes.indexOf(b)), 1 << nodes.indexOf("start"));
+                const bits = subset.reduce((acc, node) => acc | (1 << nodes.indexOf(node)), 1 << nodes.indexOf("start"));
                 subset.forEach(endNode => {
                     if (endNode === "lunch" && subsetSize < 3) return; // Lunch constraint
+
                     const prevBits = bits & ~(1 << nodes.indexOf(endNode));
                     let minCost = Infinity;
                     let bestPrev = null;
+
                     subset.forEach(prevNode => {
-                        if (prevNode !== endNode && distances[prevNode][endNode]) {
+                        if (prevNode !== endNode && distances[prevNode] && distances[prevNode][endNode]) {
                             const cost = (dp[prevBits * n + prevNode] || Infinity) + distances[prevNode][endNode];
                             if (cost < minCost) {
                                 minCost = cost;
@@ -187,23 +189,34 @@ function findOptimalRoute() {
             }
         }
 
-        // Extract the Optimal Route
+        // Backtrack to reconstruct the optimal route
         let last = "end";
         let bits = (1 << n) - 1;
         const route = [];
-        while (last) {
+
+        while (last !== "start") {
             route.push(last);
             last = backtrack[bits * n + nodes.indexOf(last)];
-            if (last) bits &= ~(1 << nodes.indexOf(last));
+            if (last === null || last === undefined) {
+                console.error("Backtracking failed - path could not be reconstructed.");
+                document.getElementById("routeOutput").textContent = "Error: Route could not be fully reconstructed.";
+                return;
+            }
+            bits &= ~(1 << nodes.indexOf(last));
         }
-        route.reverse();
+        route.push("start"); // Add the start node at the end of backtracking
+        route.reverse(); // Reverse the order to get the route from start to end
+
+        console.log("Optimal Route:", route);
         document.getElementById("routeOutput").textContent = `Optimal Route: ${route.join(" -> ")}`;
     } catch (error) {
-        console.error("Error in findOptimalRoute:", error); // Log any error during route finding
+        console.error("Error in findOptimalRoute:", error);
     }
 }
 
-// Haversine Formula for Distance Calculation
+// Helper functions
+
+// Haversine formula for calculating distances
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371; // Radius of Earth in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -212,7 +225,7 @@ function haversine(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Generate Combinations of Nodes
+// Generate all combinations of a certain length
 function combinations(arr, k) {
     const result = [];
     function backtrack(start, combo) {
@@ -222,6 +235,7 @@ function combinations(arr, k) {
     backtrack(0, []);
     return result;
 }
+
 
 // Event Listeners for Button Actions and Input Fields
 document.addEventListener("DOMContentLoaded", () => {
