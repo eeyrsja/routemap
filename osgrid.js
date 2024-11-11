@@ -233,7 +233,7 @@ export function drawMap(route) {
                 radius: 5,
                 fillOpacity: 1
             }).addTo(map);
-            marker.bindPopup(`<strong>${point.label || "Waypoint"}</strong><br>OS Grid Ref: ${point.osGridRef || "N/A"}`);
+            marker.bindPopup(`<strong>${point.label || "Waypoint"}</strong><br>OS Grid Ref: ${point.osGridRef || "N/A"}`).openPopup();
         }
     });
 
