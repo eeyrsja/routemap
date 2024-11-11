@@ -156,7 +156,48 @@ function findOptimalRoute() {
             });
         });
 
-        // ... Held-Karp algorithm logic remains unchanged ...
+        // Held-Karp Dynamic Programming Algorithm with Lunch Constraint
+        const dp = {};
+        const backtrack = {};
+        const n = nodes.length;
+
+        // Initialize the dp array
+        dp[(1 << nodes.indexOf("start")) + nodes.indexOf("start")] = 0;
+
+        for (let subsetSize = 2; subsetSize < n; subsetSize++) {
+            for (const subset of combinations(nodes.slice(1), subsetSize)) {
+                const bits = subset.reduce((a, b) => a | (1 << nodes.indexOf(b)), 1 << nodes.indexOf("start"));
+                subset.forEach(endNode => {
+                    if (endNode === "lunch" && subsetSize < 3) return; // Lunch constraint
+                    const prevBits = bits & ~(1 << nodes.indexOf(endNode));
+                    let minCost = Infinity;
+                    let bestPrev = null;
+                    subset.forEach(prevNode => {
+                        if (prevNode !== endNode && distances[prevNode][endNode]) {
+                            const cost = (dp[prevBits * n + prevNode] || Infinity) + distances[prevNode][endNode];
+                            if (cost < minCost) {
+                                minCost = cost;
+                                bestPrev = prevNode;
+                            }
+                        }
+                    });
+                    dp[bits * n + endNode] = minCost;
+                    backtrack[bits * n + endNode] = bestPrev;
+                });
+            }
+        }
+
+        // Extract the Optimal Route
+        let last = "end";
+        let bits = (1 << n) - 1;
+        const route = [];
+        while (last) {
+            route.push(last);
+            last = backtrack[bits * n + nodes.indexOf(last)];
+            if (last) bits &= ~(1 << nodes.indexOf(last));
+        }
+        route.reverse();
+        document.getElementById("routeOutput").textContent = `Optimal Route: ${route.join(" -> ")}`;
     } catch (error) {
         console.error("Error in findOptimalRoute:", error); // Log any error during route finding
     }
