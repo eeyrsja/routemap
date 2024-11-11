@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimal Route Finder Debug</title>
+</head>
+<body>
+    <h1>Optimal Route Finder</h1>
+    <button onclick="calculateOptimalRoute()">Calculate Optimal Route</button>
+    <pre id="output">Click "Calculate Optimal Route" to display the results here.</pre>
+
+    <script>
+        // Test Data
+        const routeData = {
+            "start": { "osGridRef": "so645145", "latLon": { "lat": 51.82798079268942, "lon": -2.516530095927989 }},
+            "lunch": { "osGridRef": "sp645145", "latLon": { "lat": 51.825405928847225, "lon": -1.06551738929003 }},
+            "end": { "osGridRef": "sq645145", "latLon": { "lat": 50.8325176988005, "lon": -6.7664826880099564 }},
+            "waypoints": [
+                { "label": "Waypoint A", "osGridRef": "ss645145", "latLon": { "lat": 50.91401306144237, "lon": -3.92886442763501 }},
+                { "label": "Waypoint B", "osGridRef": "st645145", "latLon": { "lat": 50.928851500796135, "lon": -2.506503188922462 }},
+                { "label": "Waypoint C", "osGridRef": "sv645145", "latLon": { "lat": 49.93625405981714, "lon": -6.677282029222347 }}
+            ]
+        };
+
+        // Function to calculate the Haversine distance between two latitude/longitude pairs
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        // Function to calculate distances between all points in the route JSON input
+        function calculateDistances(routeData) {
+            const points = ["start", "lunch", "end", ...routeData.waypoints.map(wp => wp.label)];
+            const coordinates = {
+                start: routeData.start.latLon,
+                lunch: routeData.lunch.latLon,
+                end: routeData.end.latLon,
+                ...routeData.waypoints.reduce((acc, wp) => ({ ...acc, [wp.label]: wp.latLon }), {})
+            };
+
+            // Distance matrix to store all distances
+            const distances = {};
+            points.forEach(from => {
+                distances[from] = {};
+                points.forEach(to => {
+                    if (from !== to) {
+                        const { lat: lat1, lon: lon1 } = coordinates[from];
+                        const { lat: lat2, lon: lon2 } = coordinates[to];
+                        distances[from][to] = haversine(lat1, lon1, lat2, lon2);
+                    }
+                });
+            });
+            return { points, distances };
+        }
+
+        // Main function to find the optimal route using a modified Held-Karp algorithm
+        function findOptimalPath(routeData) {
+            const { points, distances } = calculateDistances(routeData);
+            const n = points.length;
+            const dp = {};
+            const backtrack = {};
+
+            // Initialize dp with the starting point
+            dp[1 << points.indexOf("start")] = { start: 0 };
+
+            // Dynamic programming over subsets of points
+            for (let subsetSize = 2; subsetSize <= n; subsetSize++) {
+                for (let subset of combinations(points.slice(1), subsetSize - 1)) {
+                    const subsetBits = subset.reduce((acc, point) => acc | (1 << points.indexOf(point)), 1 << points.indexOf("start"));
+                    dp[subsetBits] = dp[subsetBits] || {};
+
+                    subset.forEach(endPoint => {
+                        if (endPoint === "lunch" && subsetSize < 3) return; // Ensure lunch is visited after at least 2 waypoints
+
+                        const endPointIndex = points.indexOf(endPoint);
+                        const previousBits = subsetBits & ~(1 << endPointIndex);
+
+                        let minCost = Infinity;
+                        let bestPrev = null;
+
+                        subset.forEach(prevPoint => {
+                            if (prevPoint === endPoint || !distances[prevPoint][endPoint]) return;
+
+                            const cost = (dp[previousBits]?.[prevPoint] || Infinity) + distances[prevPoint][endPoint];
+                            if (cost < minCost) {
+                                minCost = cost;
+                                bestPrev = prevPoint;
+                            }
+                        });
+
+                        if (minCost < Infinity) {
+                            dp[subsetBits][endPoint] = minCost;
+                            backtrack[subsetBits * n + endPointIndex] = bestPrev;
+                        }
+                    });
+                }
+            }
+
+            // Reconstruct the optimal route by backtracking
+            let last = "end";
+            let bits = (1 << n) - 1;
+            const optimalRoute = [];
+
+            while (last !== "start") {
+                optimalRoute.push(last);
+                const currentBits = bits * n + points.indexOf(last);
+                last = backtrack[currentBits];
+
+                if (!last) {
+                    console.error("Backtracking failed - path could not be reconstructed.");
+                    return "Error: Route could not be fully reconstructed.";
+                }
+                bits &= ~(1 << points.indexOf(last));
+            }
+
+            optimalRoute.push("start");
+            return optimalRoute.reverse().join(" -> ");
+        }
+
+        // Helper function to generate all combinations of a given length from an array
+        function combinations(arr, k) {
+            const result = [];
+            function backtrack(start, combo) {
+                if (combo.length === k) result.push(combo.slice());
+                for (let i = start; i < arr.length; i++) backtrack(i + 1, combo.concat(arr[i]));
+            }
+            backtrack(0, []);
+            return result;
+        }
+
+        // Calculate and display the optimal route
+        function calculateOptimalRoute() {
+            const result = findOptimalPath(routeData);
+            document.getElementById("output").textContent = `Optimal Route: ${result}`;
+        }
+    </script>
+</body>
+</html>
