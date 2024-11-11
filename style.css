@@ -1,80 +1,102 @@
-/* General Styles */
-* {
+/* style.css */
+
+/* General styling for body and container elements */
+body {
+    font-family: Arial, sans-serif;
     margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    padding: 10px;
+    background-color: #f8f9fa;
 }
 
-#app {
+h2, h3 {
+    font-size: 1.5em;
+    text-align: center;
+    color: #333;
+    margin-top: 0;
+}
+
+.form-group {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    font-family: Arial, sans-serif;
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
 }
 
-h2 {
-    margin: 10px 0;
+.form-group label {
+    font-size: 1em;
+    margin-bottom: 5px;
+    color: #555;
 }
 
-#imageUpload {
-    margin: 10px 0;
+.form-group input[type="text"] {
+    font-size: 1em;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 5px;
 }
 
-/* Map Container */
-#mapContainer {
-    width: 100%;
-    max-width: 390px; /* iPhone 12 Pro width */
-    height: calc(100vh - 250px); /* Adjust based on other elements' height */
-    position: relative;
-    border: 2px solid #333;
-}
-
-#mapCanvas {
-    width: 100%;
-    height: 100%;
-}
-
-/* Controls */
-#controls {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 10px;
+.form-group span {
+    font-size: 0.9em;
+    color: #666;
+    word-break: break-word;
 }
 
 button {
-    margin: 5px;
-    padding: 10px 15px;
-    font-size: 14px;
+    font-size: 1em;
+    padding: 10px;
     border: none;
     border-radius: 5px;
-    background-color: #007BFF;
+    background-color: #007bff;
     color: white;
     cursor: pointer;
+    width: 100%;
+    margin-bottom: 15px;
 }
 
 button:hover {
     background-color: #0056b3;
 }
 
-button:active {
-    background-color: #00408d;
+/* Waypoint container and map styling */
+#waypoints-container {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
 }
 
-/* Waypoints */
-.waypoint {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background-color: blue;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
+#map {
+    height: 300px;
+    margin-top: 20px;
+    border-radius: 8px;
 }
 
-.start-point {
-    background-color: green;
-}
+/* Responsive design adjustments for smaller screens */
+@media (max-width: 600px) {
+    h2 {
+        font-size: 1.4em;
+    }
 
-.end-point {
-    background-color: red;
+    h3 {
+        font-size: 1.2em;
+    }
+
+    .form-group, #waypoints-container {
+        padding: 8px;
+        border-radius: 5px;
+    }
+
+    button {
+        padding: 8px;
+        font-size: 0.9em;
+    }
+
+    #map {
+        height: 250px;
+    }
 }

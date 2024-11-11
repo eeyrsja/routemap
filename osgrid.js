@@ -195,11 +195,13 @@ export function findOptimumRoutes(data) {
 export function generateGPX(route, fileName) {
     let gpxContent = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="OptimalRouteGenerator" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${fileName}</name><trkseg>\n`;
     
-    route.forEach(({ lat, lon }) => {
-        if (lat !== undefined && lon !== undefined) {
-            gpxContent += `<trkpt lat="${lat}" lon="${lon}"><ele>0</ele><time>${new Date().toISOString()}</time></trkpt>\n`;
-        }
-    });
+    route.forEach(point => {
+                const lat = point[0];
+                const lon = point[1];
+                if (lat !== undefined && lon !== undefined) {
+                    gpxContent += `<trkpt lat="${lat}" lon="${lon}"><ele>0</ele><time>${new Date().toISOString()}</time></trkpt>\n`;
+                }
+            });
     
     gpxContent += "</trkseg></trk></gpx>";
 
