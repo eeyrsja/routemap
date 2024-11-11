@@ -59,67 +59,72 @@
 
         // Main function to find the optimal route using a modified Held-Karp algorithm
         function findOptimalPath(routeData) {
-            const { points, distances } = calculateDistances(routeData);
-            const n = points.length;
-            const dp = {};
-            const backtrack = {};
+			const { points, distances } = calculateDistances(routeData);
+			const n = points.length;
+			const dp = {};
+			const backtrack = {};
 
-            // Initialize dp with the starting point
-            dp[1 << points.indexOf("start")] = { start: 0 };
+			// Initialize dp with the starting point
+			dp[1 << points.indexOf("start")] = { start: 0 };
 
-            // Dynamic programming over subsets of points
-            for (let subsetSize = 2; subsetSize <= n; subsetSize++) {
-                for (let subset of combinations(points.slice(1), subsetSize - 1)) {
-                    const subsetBits = subset.reduce((acc, point) => acc | (1 << points.indexOf(point)), 1 << points.indexOf("start"));
-                    dp[subsetBits] = dp[subsetBits] || {};
+			// Dynamic programming over subsets of points
+			for (let subsetSize = 2; subsetSize <= n; subsetSize++) {
+				for (let subset of combinations(points.slice(1), subsetSize - 1)) {
+					const subsetBits = subset.reduce((acc, point) => acc | (1 << points.indexOf(point)), 1 << points.indexOf("start"));
+					dp[subsetBits] = dp[subsetBits] || {};
 
-                    subset.forEach(endPoint => {
-                        if (endPoint === "lunch" && subsetSize < 3) return; // Ensure lunch is visited after at least 2 waypoints
+					subset.forEach(endPoint => {
+						if (endPoint === "lunch" && subsetSize < 3) return; // Ensure lunch is visited after at least 2 waypoints
 
-                        const endPointIndex = points.indexOf(endPoint);
-                        const previousBits = subsetBits & ~(1 << endPointIndex);
+						const endPointIndex = points.indexOf(endPoint);
+						const previousBits = subsetBits & ~(1 << endPointIndex);
 
-                        let minCost = Infinity;
-                        let bestPrev = null;
+						let minCost = Infinity;
+						let bestPrev = null;
 
-                        subset.forEach(prevPoint => {
-                            if (prevPoint === endPoint || !distances[prevPoint][endPoint]) return;
+						// Loop over all possible previous points in previousBits
+						for (let prevPointIndex = 0; prevPointIndex < n; prevPointIndex++) {
+							if (previousBits & (1 << prevPointIndex)) {
+								const prevPoint = points[prevPointIndex];
+								if (prevPoint === endPoint || !distances[prevPoint][endPoint]) continue;
 
-                            const cost = (dp[previousBits]?.[prevPoint] || Infinity) + distances[prevPoint][endPoint];
-                            if (cost < minCost) {
-                                minCost = cost;
-                                bestPrev = prevPoint;
-                            }
-                        });
+								const cost = (dp[previousBits]?.[prevPoint] || Infinity) + distances[prevPoint][endPoint];
+								if (cost < minCost) {
+									minCost = cost;
+									bestPrev = prevPoint;
+								}
+							}
+						}
 
-                        if (minCost < Infinity) {
-                            dp[subsetBits][endPoint] = minCost;
-                            backtrack[subsetBits * n + endPointIndex] = bestPrev;
-                        }
-                    });
-                }
-            }
+						if (minCost < Infinity) {
+							dp[subsetBits][endPoint] = minCost;
+							backtrack[subsetBits * n + endPointIndex] = bestPrev;
+						}
+					});
+				}
+			}
 
-            // Reconstruct the optimal route by backtracking
-            let last = "end";
-            let bits = (1 << n) - 1;
-            const optimalRoute = [];
+			// Reconstruct the optimal route by backtracking
+			let last = "end";
+			let bits = (1 << n) - 1;
+			const optimalRoute = [];
 
-            while (last !== "start") {
-                optimalRoute.push(last);
-                const currentBits = bits * n + points.indexOf(last);
-                last = backtrack[currentBits];
+			while (last !== "start") {
+				optimalRoute.push(last);
+				const currentBits = bits * n + points.indexOf(last);
+				last = backtrack[currentBits];
 
-                if (!last) {
-                    console.error("Backtracking failed - path could not be reconstructed.");
-                    return "Error: Route could not be fully reconstructed.";
-                }
-                bits &= ~(1 << points.indexOf(last));
-            }
+				if (!last) {
+					console.error("Backtracking failed - path could not be reconstructed.");
+					return "Error: Route could not be fully reconstructed.";
+				}
+				bits &= ~(1 << points.indexOf(last));
+			}
 
-            optimalRoute.push("start");
-            return optimalRoute.reverse().join(" -> ");
-        }
+			optimalRoute.push("start");
+			return optimalRoute.reverse().join(" -> ");
+		}
+
 
         // Helper function to generate all combinations of a given length from an array
         function combinations(arr, k) {
