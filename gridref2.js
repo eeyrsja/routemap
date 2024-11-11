@@ -221,3 +221,7 @@ export function drawMap(route) {
             marker.bindPopup(`<strong>${point.label || "Waypoint"}</strong><br>OS Grid Ref: ${point.osGridRef || "N/A"}`);
         }
     });
+
+    const routeCoords = route.map(point => [point[0], point[1]]);
+    L.polyline(routeCoords, { color: 'blue' }).addTo(map);
+}
