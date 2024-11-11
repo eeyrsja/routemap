@@ -183,8 +183,13 @@ function findOptimalRoute() {
                             }
                         }
                     });
-                    dp[bits * n + endNode] = minCost;
-                    backtrack[bits * n + endNode] = bestPrev;
+
+                    // Populate dp and backtrack if a valid minimum cost path was found
+                    if (minCost < Infinity) {
+                        dp[bits * n + endNode] = minCost;
+                        backtrack[bits * n + endNode] = bestPrev;
+                        console.log(`Setting dp[${bits}][${endNode}] = ${minCost} via ${bestPrev}`);
+                    }
                 });
             }
         }
@@ -196,12 +201,15 @@ function findOptimalRoute() {
 
         while (last !== "start") {
             route.push(last);
-            last = backtrack[bits * n + nodes.indexOf(last)];
+            const currentBits = bits * n + nodes.indexOf(last);
+            last = backtrack[currentBits];
+
             if (last === null || last === undefined) {
                 console.error("Backtracking failed - path could not be reconstructed.");
                 document.getElementById("routeOutput").textContent = "Error: Route could not be fully reconstructed.";
                 return;
             }
+
             bits &= ~(1 << nodes.indexOf(last));
         }
         route.push("start"); // Add the start node at the end of backtracking
@@ -235,6 +243,7 @@ function combinations(arr, k) {
     backtrack(0, []);
     return result;
 }
+
 
 
 // Event Listeners for Button Actions and Input Fields
