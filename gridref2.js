@@ -58,6 +58,11 @@ export function parseInputAndCalculate() {
     findOptimumRoutes(data);
 }
 
+// Add these lines to expose functions globally
+window.updateLatLon = updateLatLon;
+window.addWaypoint = addWaypoint;
+window.parseInputAndCalculate = parseInputAndCalculate;
+
 let bestRoutesByLunchPosition = {};  // Store best routes per lunch position for map rendering
 
 // Haversine function for distance calculation
