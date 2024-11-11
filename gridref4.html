@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSP with Lunch Constraint</title>
+</head>
+<body>
+    
+
+    <script>
+        // Provided data with new waypoints
+        const data = {
+            start: {
+                osGridRef: "so627095",
+                latLon: { lat: 51.782910189658246, lon: -2.5421081751230923 }
+            },
+            lunch: {
+                osGridRef: "so622122",
+                latLon: { lat: 51.80715113831243, lon: -2.5496510676062476 }
+            },
+            end: {
+                osGridRef: "so654154",
+                latLon: { lat: 51.836072, lon: -2.516623 }
+            },
+            waypoints: [
+                { label: "ruspidge", latLon: { lat: 51.810930275826536, lon: -2.509082456851173 } },
+                { label: "speculation", latLon: { lat: 51.81786410611253, lon: -2.565739675264192 } },
+                { label: "roundfence", latLon: { lat: 51.836072, lon: -2.516623 } },
+                { label: "sapling", latLon: { lat: 51.7891767272659, lon: -2.547982631037622 } },
+                { label: "sculpture", latLon: { lat: 51.809861839969855, lon: -2.54678307948389 } },
+                { label: "dead tree", latLon: { lat: 51.794467661082656, lon: -2.56979671231002 } }
+            ]
+        };
+        // Haversine function for distance calculation
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Earth radius in meters
+            const phi1 = lat1 * Math.PI / 180;
+            const phi2 = lat2 * Math.PI / 180;
+            const deltaPhi = phi2 - phi1;
+            const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(deltaPhi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        // Compute distance matrix
+        function computeDistanceMatrix(locations) {
+            const size = locations.length;
+            const distanceMatrix = Array.from({ length: size }, () => Array(size).fill(0));
+            for (let i = 0; i < size; i++) {
+                for (let j = i + 1; j < size; j++) {
+                    const dist = haversine(locations[i].lat, locations[i].lon, locations[j].lat, locations[j].lon);
+                    distanceMatrix[i][j] = dist;
+                    distanceMatrix[j][i] = dist;
+                }
+            }
+            return distanceMatrix;
+        }
+
+        // Generate all permutations
+        function permutations(array) {
+            if (array.length === 1) return [array];
+            const result = [];
+            for (let i = 0; i < array.length; i++) {
+                const current = array[i];
+                const remaining = array.slice(0, i).concat(array.slice(i + 1));
+                const remainingPerms = permutations(remaining);
+                for (let perm of remainingPerms) {
+                    result.push([current, ...perm]);
+                }
+            }
+            return result;
+        }
+
+        // Main function to find optimal routes
+        function findOptimumRoutes() {
+            const start = data.start.latLon;
+            const lunch = data.lunch.latLon;
+            const end = data.end.latLon;
+            const waypoints = data.waypoints;
+
+            const waypointCoords = waypoints.map(wp => wp.latLon);
+            const locationNames = ["Start", ...waypoints.map(wp => wp.label), "Lunch", "End"];
+            const locations = [start, ...waypointCoords, lunch, end];
+            const distanceMatrix = computeDistanceMatrix(locations);
+
+            const numWaypoints = waypoints.length;
+            const lunchPositions = [3, 4, 5];  // Allowed lunch positions
+            const outputContainer = document.getElementById("output");
+            outputContainer.innerHTML = "";  // Clear previous output
+
+            lunchPositions.forEach(lunchPosition => {
+                let minTotalCost = Infinity;
+                let bestRoute = [];
+
+                const waypointIndices = Array.from({ length: numWaypoints }, (_, i) => i + 1);  // Waypoint indices
+                const allPermutations = permutations(waypointIndices);
+
+                for (let perm of allPermutations) {
+                    const route = [0, ...perm, numWaypoints + 2];  // Start and End
+                    const routeWithLunch = [
+                        ...route.slice(0, lunchPosition - 1), 
+                        numWaypoints + 1, 
+                        ...route.slice(lunchPosition - 1)
+                    ]; // Insert lunch at the specified position
+
+                    let totalCost = 0;
+                    for (let i = 0; i < routeWithLunch.length - 1; i++) {
+                        totalCost += distanceMatrix[routeWithLunch[i]][routeWithLunch[i + 1]];
+                    }
+
+                    if (totalCost < minTotalCost) {
+                        minTotalCost = totalCost;
+                        bestRoute = routeWithLunch;
+                    }
+                }
+
+                // Display the best route and add a GPX button for the given lunch position
+                const routeText = bestRoute.map(i => locationNames[i]).join(" -> ");
+                const distanceText = `Total distance: ${(minTotalCost / 1000).toFixed(2)} km`;
+                
+                const resultDiv = document.createElement("div");
+                resultDiv.innerHTML = `<strong>Best route with Lunch at position ${lunchPosition}:</strong><br>${routeText}<br>${distanceText}<br>`;
+                
+                const gpxButton = document.createElement("button");
+                gpxButton.textContent = "Generate GPX";
+                gpxButton.onclick = () => generateGPX(bestRoute.map(i => locations[i]), `Optimal_Route_Lunch_Position_${lunchPosition}.gpx`);
+                resultDiv.appendChild(gpxButton);
+                
+                outputContainer.appendChild(resultDiv);
+                outputContainer.appendChild(document.createElement("hr"));
+            });
+        }
+
+        // GPX generation function
+        function generateGPX(route, fileName) {
+            let gpxContent = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="OptimalRouteGenerator" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${fileName}</name><trkseg>\n`;
+            
+            route.forEach(({ lat, lon }) => {
+                gpxContent += `<trkpt lat="${lat}" lon="${lon}"><ele>0</ele><time>${new Date().toISOString()}</time></trkpt>\n`;
+            });
+            
+            gpxContent += "</trkseg></trk></gpx>";
+
+            // Create a blob and download the GPX file
+            const blob = new Blob([gpxContent], { type: "application/gpx+xml" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+        }
+	</script>
+	
+	<h1>Traveling Salesman Problem with Lunch Constraint</h1>
+    <button onclick="findOptimumRoutes()">Calculate Optimal Routes</button>
+    <div id="output"></div>
+    
+</body>
+</html>
