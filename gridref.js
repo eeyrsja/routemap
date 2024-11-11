@@ -50,26 +50,46 @@ function addWaypoint() {
     });
 }
 
-// Export Form Data to JSON
+// Export Form Data to JSON with Lat/Lon included
 function exportToJSON() {
     try {
+        // Helper function to get both OS grid ref and lat/lon for a given element ID
+        function getGridRefWithLatLon(id) {
+            const gridRef = document.getElementById(id)?.value;
+            if (gridRef) {
+                const coords = convertGridRefToLatLon(gridRef);
+                return {
+                    osGridRef: gridRef,
+                    latLon: coords ? { lat: coords[0], lon: coords[1] } : "Invalid Grid Ref"
+                };
+            }
+            return null;
+        }
+
+        // Collect data for start, lunch, and end points
         const data = {
-            start: document.getElementById("start").value,
-            lunch: document.getElementById("lunch").value,
-            end: document.getElementById("end").value,
+            start: getGridRefWithLatLon("start"),
+            lunch: getGridRefWithLatLon("lunch"),
+            end: getGridRefWithLatLon("end"),
             waypoints: []
         };
+
         console.log("Collecting waypoints for JSON export"); // Log start of waypoint collection
 
-        // Collect waypoints
+        // Collect all dynamically added waypoints
         const waypointContainer = document.getElementById("waypoints");
-        waypointContainer.querySelectorAll(".waypoint-row").forEach(row => {
-            const waypointInput = row.querySelector("input[type='text']");
-            if (waypointInput && waypointInput.value) {
-                data.waypoints.push(waypointInput.value);
-                console.log(`Collected waypoint: ${waypointInput.value}`); // Log each collected waypoint
+        waypointContainer.querySelectorAll(".waypoint-row input[type='text']").forEach((waypointInput, index) => {
+            const waypointLabel = String.fromCharCode(65 + index); // A, B, C, etc.
+            if (waypointInput.value) {
+                const coords = convertGridRefToLatLon(waypointInput.value);
+                data.waypoints.push({
+                    label: `Waypoint ${waypointLabel}`,
+                    osGridRef: waypointInput.value,
+                    latLon: coords ? { lat: coords[0], lon: coords[1] } : "Invalid Grid Ref"
+                });
+                console.log(`Collected waypoint ${waypointLabel}:`, waypointInput.value); // Log each collected waypoint
             } else {
-                console.warn("Waypoint input missing or empty"); // Warn if a waypoint input is missing or empty
+                console.warn(`Waypoint ${waypointLabel} input missing or empty`);
             }
         });
 
@@ -99,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("export-json-btn").addEventListener("click", exportToJSON);
     document.getElementById("find-route-btn").addEventListener("click", findOptimalRoute);
 });
+
 
 // Find the Optimal Route Using Held-Karp Algorithm with Lunch Constraint
 function findOptimalRoute() {
