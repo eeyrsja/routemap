@@ -11,6 +11,8 @@ export function addWaypoint() {
     waypointDiv.innerHTML = `
         <input type="text" id="waypoint-${waypointCount}" oninput="updateLatLon('waypoint-${waypointCount}')" placeholder="e.g., SO 600 100">
         <span id="waypoint-${waypointCount}-coords"></span>
+		<span id="waypoint-${waypointCount}-w3wcoords"></span> <!-- Added element for what3words -->
+
     `;
     document.getElementById("waypoint-inputs").appendChild(waypointDiv);
 }
@@ -29,11 +31,22 @@ export function osGridToLatLon(gridrefStr) {
     }
 }
 
-export function updateLatLon(id) {
+export async function updateLatLon(id) {
     const osGridRef = document.getElementById(id).value;
     const coords = osGridToLatLon(osGridRef);
-    document.getElementById(`${id}-coords`).textContent = coords ? `Lat: ${coords[0].toFixed(5)}, Lon: ${coords[1].toFixed(5)}` : '';
+    
+    // Update latitude and longitude display
+    document.getElementById(`${id}-coords`).textContent = coords 
+        ? `Lat: ${coords[0].toFixed(8)}, Lon: ${coords[1].toFixed(8)}` 
+        : '';
+
+    // Fetch and display what3words address asynchronously
+    if (coords) {
+        const w3w = await getWhat3Words(coords[0], coords[1]);
+        document.getElementById(`${id}-w3wcoords`).textContent = w3w ? w3w : 'No W3W address found';
+    }
 }
+
 
 export function parseInputAndCalculate() {
     const data = {
@@ -161,7 +174,7 @@ export function findOptimumRoutes(data) {
             const distanceText = `Total distance: ${(minTotalCost / 1000).toFixed(2)} km`;
             
             const resultDiv = document.createElement("div");
-            resultDiv.innerHTML = `<strong>Best route with Lunch at position ${lunchPosition}:</strong><br>${routeText}<br>${distanceText}<br>`;
+            resultDiv.innerHTML = `<strong>Best route with Lunch after waypoint ${lunchPosition-1}:</strong><br>${routeText}<br>${distanceText}<br>`;
             
             const drawMapButton = document.createElement("button");
             drawMapButton.textContent = `Draw Map for Lunch at ${lunchPosition}`;
@@ -224,4 +237,21 @@ export function drawMap(route) {
 
     const routeCoords = route.map(point => [point[0], point[1]]);
     L.polyline(routeCoords, { color: 'blue' }).addTo(map);
+}
+
+export async function getWhat3Words(lat, lng) {
+  const apiKey = 'CB0E4XV2'; // Replace with your actual API key
+  const url = `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.words;
+  } catch (error) {
+    console.error('Error fetching what3words address:', error);
+    return null;
+  }
 }
