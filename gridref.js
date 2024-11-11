@@ -161,7 +161,7 @@ function findOptimalRoute() {
         const backtrack = {};
         const n = nodes.length;
 
-        // Initialize the dp table with the starting point
+        // Initialize dp table with the starting point
         dp[(1 << nodes.indexOf("start")) + nodes.indexOf("start")] = 0;
 
         for (let subsetSize = 2; subsetSize <= n; subsetSize++) {
@@ -179,11 +179,18 @@ function findOptimalRoute() {
                     subset.forEach(prevNode => {
                         const prevIndex = nodes.indexOf(prevNode);
                         if (prevNode !== endNode && distances[prevNode] && distances[prevNode][endNode]) {
-                            const cost = (dp[prevBits * n + prevIndex] || Infinity) + distances[prevNode][endNode];
+                            const dpPrevCost = dp[prevBits * n + prevIndex] || Infinity;
+                            const edgeCost = distances[prevNode][endNode];
+                            const cost = dpPrevCost + edgeCost;
+                            
+                            console.log(`Evaluating: from ${prevNode} to ${endNode}, dp[prevBits: ${prevBits}][prevNode: ${prevNode}] = ${dpPrevCost}, edgeCost = ${edgeCost}, totalCost = ${cost}`);
+                            
                             if (cost < minCost) {
                                 minCost = cost;
                                 bestPrev = prevNode;
                             }
+                        } else {
+                            console.warn(`Skipping: from ${prevNode} to ${endNode} - Either same node or no distance available.`);
                         }
                     });
 
@@ -192,6 +199,8 @@ function findOptimalRoute() {
                         dp[bits * n + endIndex] = minCost;
                         backtrack[bits * n + endIndex] = bestPrev;
                         console.log(`Setting dp[${bits}][${endNode}] = ${minCost} via ${bestPrev}`);
+                    } else {
+                        console.warn(`No valid path found for endNode ${endNode} in subset ${subset}`);
                     }
                 });
             }
