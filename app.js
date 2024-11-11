@@ -235,9 +235,8 @@ function drawRoute(pointOrder) {
     ctx.strokeStyle = 'yellow';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    let distances = [];
 
-    // Draw route and calculate distances
+    // Draw route
     for (let i = 0; i < pointOrder.length; i++) {
         const point = getPointById(pointOrder[i]);
         if (!point) {
@@ -249,71 +248,27 @@ function drawRoute(pointOrder) {
             ctx.moveTo(point.x, point.y);
         } else {
             ctx.lineTo(point.x, point.y);
-
-            // Calculate distance between this point and the previous point
-            const prevPoint = getPointById(pointOrder[i - 1]);
-            if (!prevPoint) {
-                console.error(`Previous point with ID ${pointOrder[i - 1]} not found`);
-                continue;
-            }
-
-            const dist = Math.hypot(point.x - prevPoint.x, point.y - prevPoint.y);
-            distances.push(dist);
         }
     }
     ctx.stroke();
-
-    // If there are distances to scale
-    if (distances.length > 0) {
-        // Calculate the average distance
-        const totalDistance = distances.reduce((acc, dist) => acc + dist, 0);
-        const avgDistance = totalDistance / distances.length;
-
-        // Scale distances so that the average leg length is 100
-        const scaledDistances = distances.map(dist => {
-            return (dist / avgDistance) * 100;
-        });
-
-        // Display the scaled distances along the route
-        for (let i = 1; i < pointOrder.length; i++) {
-            const startPt = getPointById(pointOrder[i - 1]);
-            const endPt = getPointById(pointOrder[i]);
-
-            if (!startPt || !endPt) {
-                console.error(`Could not find points with IDs ${pointOrder[i - 1]} or ${pointOrder[i]}`);
-                continue;
-            }
-
-            // Calculate midpoint for displaying the distance
-            const midX = (startPt.x + endPt.x) / 2;
-            const midY = (startPt.y + endPt.y) / 2;
-
-            // Display the scaled distance as an integer
-            const scaledDist = Math.round(scaledDistances[i - 1]);
-
-            // Debugging: Log the distance being displayed
-            console.log(`Displaying scaled distance: ${scaledDist} at midpoint (${midX}, ${midY})`);
-
-            // Add a background rectangle for better readability
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(midX - 10, midY - 15, 30, 20);
-
-            ctx.fillStyle = 'white';
-            ctx.font = '14px Arial';
-            ctx.fillText(scaledDist.toString(), midX - 5, midY);
-        }
-    } else {
-        console.warn("No distances found to display");
-    }
 }
-
-
 
 // Helper function to get point by id
 function getPointById(id) {
     if (id === 'start') return startPoint;
     if (id === 'end') return endPoint;
     return waypoints.find(wp => wp.id === id);
+}
+
+// Helper function to draw a point on the canvas
+function drawPoint(point, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = 'black';
+    ctx.font = '12px Arial';
+    ctx.fillText(point.label, point.x + 6, point.y - 6);
 }
 
 // Redraw everything
