@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>OS Grid Ref Converter & Route Optimizer</title>
+    <link rel="stylesheet" href="gridref.css">
+</head>
+<body>
+    <div class="grid-form">
+        <h2>OS Grid Ref Converter & Route Optimizer</h2>
+        <div class="input-group">
+            <label>Start Point:</label>
+            <input id="start" placeholder="e.g., SO 645 154" data-output="startLatLon">
+            <span id="startLatLon" class="lat-lon-output"></span>
+        </div>
+        <div class="input-group">
+            <label>Lunch Point:</label>
+            <input id="lunch" placeholder="e.g., SO 650 126" data-output="lunchLatLon">
+            <span id="lunchLatLon" class="lat-lon-output"></span>
+        </div>
+        <div class="input-group">
+            <label>End Point:</label>
+            <input id="end" placeholder="e.g., SO 645 154" data-output="endLatLon">
+            <span id="endLatLon" class="lat-lon-output"></span>
+        </div>
+        <div id="waypoints">
+            <div class="waypoint-row">
+                <label>Waypoint A:</label>
+                <input id="waypointA" placeholder="e.g., SO 645 154" data-output="latLonA">
+                <span id="latLonA" class="lat-lon-output"></span>
+            </div>
+        </div>
+        <button id="add-waypoint-btn">Add Waypoint</button>
+        <button id="export-json-btn">Export to JSON</button>
+        <button id="find-route-btn">Find Optimal Route</button>
+        <pre id="jsonOutput"></pre>
+        <div id="routeOutput"></div>
+    </div>
+
+    <script type="module" src="gridref.js"></script>
+</body>
+</html>

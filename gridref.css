@@ -1,0 +1,70 @@
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h2 {
+            font-size: 1.4rem;
+            text-align: center;
+            color: #333;
+        }
+        .grid-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .input-group {
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 0.9rem;
+            color: #555;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-top: 5px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #007bff;
+        }
+        .lat-lon-output {
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #006400;
+        }
+        .waypoint-row {
+            display: flex;
+            flex-direction: column;
+            margin-top: 5px;
+        }
+        #add-waypoint-btn, #export-json-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        #add-waypoint-btn:hover, #export-json-btn:hover {
+            background-color: #0056b3;
+        }
+        #jsonOutput {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #333;
+        }
