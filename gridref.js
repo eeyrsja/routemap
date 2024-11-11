@@ -164,19 +164,22 @@ function findOptimalRoute() {
         // Initialize the dp table with the starting point
         dp[(1 << nodes.indexOf("start")) + nodes.indexOf("start")] = 0;
 
-        for (let subsetSize = 2; subsetSize < n; subsetSize++) {
-            for (const subset of combinations(nodes.slice(1), subsetSize)) {
+        for (let subsetSize = 2; subsetSize <= n; subsetSize++) {
+            for (const subset of combinations(nodes.slice(1), subsetSize - 1)) {
                 const bits = subset.reduce((acc, node) => acc | (1 << nodes.indexOf(node)), 1 << nodes.indexOf("start"));
                 subset.forEach(endNode => {
                     if (endNode === "lunch" && subsetSize < 3) return; // Lunch constraint
 
-                    const prevBits = bits & ~(1 << nodes.indexOf(endNode));
+                    const endIndex = nodes.indexOf(endNode);
+                    const prevBits = bits & ~(1 << endIndex);
+
                     let minCost = Infinity;
                     let bestPrev = null;
 
                     subset.forEach(prevNode => {
+                        const prevIndex = nodes.indexOf(prevNode);
                         if (prevNode !== endNode && distances[prevNode] && distances[prevNode][endNode]) {
-                            const cost = (dp[prevBits * n + prevNode] || Infinity) + distances[prevNode][endNode];
+                            const cost = (dp[prevBits * n + prevIndex] || Infinity) + distances[prevNode][endNode];
                             if (cost < minCost) {
                                 minCost = cost;
                                 bestPrev = prevNode;
@@ -186,8 +189,8 @@ function findOptimalRoute() {
 
                     // Populate dp and backtrack if a valid minimum cost path was found
                     if (minCost < Infinity) {
-                        dp[bits * n + endNode] = minCost;
-                        backtrack[bits * n + endNode] = bestPrev;
+                        dp[bits * n + endIndex] = minCost;
+                        backtrack[bits * n + endIndex] = bestPrev;
                         console.log(`Setting dp[${bits}][${endNode}] = ${minCost} via ${bestPrev}`);
                     }
                 });
