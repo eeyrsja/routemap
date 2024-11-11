@@ -10,8 +10,8 @@ export function addWaypoint() {
     waypointDiv.className = "form-group";
     waypointDiv.innerHTML = `
         <input type="text" id="waypoint-${waypointCount}" oninput="updateLatLon('waypoint-${waypointCount}')" placeholder="e.g., SO 600 100">
-        <span id="waypoint-${waypointCount}-coords"></span>
-		<span id="waypoint-${waypointCount}-w3wcoords"></span> <!-- Added element for what3words -->
+        <br/><span id="waypoint-${waypointCount}-coords"></span>
+		<br/><span id="waypoint-${waypointCount}-w3wcoords"></span> <!-- Added element for what3words -->
 
     `;
     document.getElementById("waypoint-inputs").appendChild(waypointDiv);

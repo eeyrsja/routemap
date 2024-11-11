@@ -27,24 +27,27 @@
         <div class="form-group">
             <label>Start (OS Grid Ref):</label>
             <input type="text" id="start" oninput="updateLatLon('start')" placeholder="e.g., SO 645 154">
-            <span id="start-coords"></span>
+            <br/><span id="start-coords"></span>
+			<br/><span id="start-w3wcoords"></span>
         </div>
         <div class="form-group">
             <label>Lunch (OS Grid Ref):</label>
             <input type="text" id="lunch" oninput="updateLatLon('lunch')" placeholder="e.g., SO 622 122">
-            <span id="lunch-coords"></span>
+            <br/><span id="lunch-coords"></span>
+			<br/><span id="lunch-w3wcoords"></span>
         </div>
         <div class="form-group">
             <label>End (OS Grid Ref):</label>
             <input type="text" id="end" oninput="updateLatLon('end')" placeholder="e.g., SO 654 154">
-            <span id="end-coords"></span>
+            <br/><span id="end-coords"></span>
+			<br/><span id="lunch-w3wcoords"></span>
         </div>
         <div id="waypoints-container">
             <label>Waypoints (OS Grid Ref):</label>
             <button onclick="addWaypoint()">Add Waypoint</button>
             <div id="waypoint-inputs"></div>
         </div>
-        <button onclick="parseInputAndCalculate()">Calculate Optimal Routes</button>
+        <br/><button onclick="parseInputAndCalculate()">Calculate Optimal Routes</button>
     </div>
 
     <div id="output"></div>
