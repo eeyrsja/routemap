@@ -211,9 +211,9 @@ export function drawMap(route) {
 
     const colors = { Start: 'green', Lunch: 'orange', End: 'red' };
     route.forEach((point, index) => {
-        if (point.lat !== undefined && point.lon !== undefined) {
+        if (point[0] !== undefined && point[1] !== undefined) {
             const markerColor = colors[point.label] || 'blue';
-            const marker = L.circleMarker([point.lat, point.lon], {
+            const marker = L.circleMarker([point[0], point[1]], {
                 color: markerColor,
                 radius: 5,
                 fillOpacity: 1
@@ -221,7 +221,3 @@ export function drawMap(route) {
             marker.bindPopup(`<strong>${point.label || "Waypoint"}</strong><br>OS Grid Ref: ${point.osGridRef || "N/A"}`);
         }
     });
-
-    const routeCoords = route.filter(point => point.lat !== undefined && point.lon !== undefined).map(point => [point.lat, point.lon]);
-    L.polyline(routeCoords, { color: 'blue' }).addTo(map);
-}
