@@ -80,6 +80,26 @@ function exportToJSON() {
     }
 }
 
+// Event Listeners for Button Actions and Input Fields
+document.addEventListener("DOMContentLoaded", () => {
+    // Set up event listeners for initial input fields (start, lunch, end, and waypointA)
+    const initialFields = ["start", "lunch", "end", "waypointA"];
+    initialFields.forEach(fieldId => {
+        const input = document.getElementById(fieldId);
+        if (input) {
+            input.addEventListener("input", function() {
+                updateLatLon(this);
+            });
+        } else {
+            console.warn(`Initial field ${fieldId} not found`);
+        }
+    });
+
+    document.getElementById("add-waypoint-btn").addEventListener("click", addWaypoint);
+    document.getElementById("export-json-btn").addEventListener("click", exportToJSON);
+    document.getElementById("find-route-btn").addEventListener("click", findOptimalRoute);
+});
+
 // Find the Optimal Route Using Held-Karp Algorithm with Lunch Constraint
 function findOptimalRoute() {
     try {
