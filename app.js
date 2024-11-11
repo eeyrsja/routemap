@@ -121,6 +121,7 @@ loadBtn.addEventListener('click', () => {
     }
 });
 
+// Update the calculateRouteBtn event listener
 calculateRouteBtn.addEventListener('click', () => {
     if (!startPoint || !endPoint || waypoints.length === 0) {
         alert('Please add a start point, end point, and at least one waypoint.');
@@ -133,8 +134,17 @@ calculateRouteBtn.addEventListener('click', () => {
     // Build the distance matrix
     const distanceMatrix = buildDistanceMatrix(allPoints);
 
-    // Find the shortest path using the Held-Karp algorithm
-    const { path, cost } = heldKarp(distanceMatrix);
+    const startIdx = 0; // startPoint is at index 0
+    const endIdx = allPoints.length - 1; // endPoint is at the last index
+
+    // Find the shortest path using the corrected Held-Karp algorithm
+    const { path, cost } = heldKarp(distanceMatrix, startIdx, endIdx);
+
+    // Check if a valid path exists
+    if (cost === Infinity) {
+        alert('No valid path found.');
+        return;
+    }
 
     // Map the path indices back to point IDs
     const pointOrder = path.map(index => allPoints[index].id);
@@ -145,20 +155,6 @@ calculateRouteBtn.addEventListener('click', () => {
     // Draw the route
     drawRoute(pointOrder);
 });
-
-// Draw a point on the canvas
-function drawPoint(point, color) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (point.label) {
-        ctx.fillStyle = 'white';
-        ctx.font = '12px Arial';
-        ctx.fillText(point.label, point.x + 7, point.y - 7);
-    }
-}
 
 // Build a distance matrix between all points
 function buildDistanceMatrix(points) {
@@ -175,65 +171,58 @@ function buildDistanceMatrix(points) {
     return matrix;
 }
 
-// Held-Karp algorithm for TSP
-function heldKarp(distanceMatrix) {
+// Held-Karp algorithm for Hamiltonian Path with fixed start and end points
+function heldKarp(distanceMatrix, start, end) {
     const n = distanceMatrix.length;
-    const start = 0; // Start point index
-    const END_STATE = (1 << n) - 1;
+    const size = 1 << n;
+    const dp = Array.from({ length: size }, () => Array(n).fill(Infinity));
+    const parent = Array.from({ length: size }, () => Array(n).fill(null));
 
-    const memo = {};
-    const prev = {};
+    dp[1 << start][start] = 0;
 
-    function visit(city, state) {
-        const key = `${city}|${state}`;
-        if (memo[key] !== undefined) {
-            return memo[key];
-        }
+    for (let subset = 0; subset < size; subset++) {
+        if (!(subset & (1 << start))) continue; // Subsets must include the start node
 
-        if (state === (1 << city) | 1) {
-            return distanceMatrix[start][city];
-        }
+        for (let last = 0; last < n; last++) {
+            if (!(subset & (1 << last))) continue; // Last node must be in the subset
 
-        let minCost = Infinity;
-        let minPrevCity = null;
+            // Skip if start and last are the same but subset has more than one node
+            if (last === start && subset !== (1 << start)) continue;
 
-        const prevState = state & ~(1 << city);
+            for (let next = 0; next < n; next++) {
+                if (subset & (1 << next)) continue; // Next node must not be in the subset
 
-        for (let prevCity = 0; prevCity < n; prevCity++) {
-            if (prevCity === city || !(prevState & (1 << prevCity))) continue;
+                const nextSubset = subset | (1 << next);
+                const newCost = dp[subset][last] + distanceMatrix[last][next];
 
-            const cost = visit(prevCity, prevState) + distanceMatrix[prevCity][city];
-            if (cost < minCost) {
-                minCost = cost;
-                minPrevCity = prevCity;
+                if (dp[nextSubset][next] > newCost) {
+                    dp[nextSubset][next] = newCost;
+                    parent[nextSubset][next] = last;
+                }
             }
         }
-
-        memo[key] = minCost;
-        prev[key] = minPrevCity;
-        return minCost;
     }
 
-    // Start the recursion from the end point
-    const minTourCost = visit(n - 1, END_STATE);
+    const fullSet = (1 << n) - 1;
 
-    // Backtrack to find full path
-    let state = END_STATE;
-    let city = n - 1;
-    const tour = [];
+    // The minimal cost to reach the end node, having visited all nodes
+    const minCost = dp[fullSet][end];
 
-    while (true) {
-        tour.push(city);
-        const key = `${city}|${state}`;
-        city = prev[key];
-        if (city === null) break;
-        state = state & ~(1 << tour[tour.length - 1]);
+    // Reconstruct the path
+    const path = [];
+    let currentNode = end;
+    let currentSubset = fullSet;
+
+    while (currentNode !== null) {
+        path.push(currentNode);
+        const temp = parent[currentSubset][currentNode];
+        currentSubset = currentSubset & ~(1 << currentNode);
+        currentNode = temp;
     }
 
-    tour.push(start); // Add the start point
-    tour.reverse();
+    path.reverse(); // Reverse the path to get the correct order
 
-    return { path: tour, cost: minTourCost };
+    return { path, cost: minCost };
 }
 
 // Draw the route on the canvas
