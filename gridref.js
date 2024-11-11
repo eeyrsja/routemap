@@ -130,8 +130,6 @@ function findOptimalRoute() {
             end: document.getElementById("end").value,
             waypoints: Array.from(document.querySelectorAll(".waypoint-row input[type='text']")).map(input => input.value)
         };
-        console.log("Locations for route optimization:", locations);
-
         const coords = {};
         const nodes = ["start", ...locations.waypoints.map((_, i) => String.fromCharCode(65 + i)), "lunch", "end"];
 
@@ -151,24 +149,23 @@ function findOptimalRoute() {
             nodes.forEach((to) => {
                 if (from !== to && coords[from] && coords[to]) {
                     distances[from][to] = haversine(...coords[from], ...coords[to]);
-                    console.log(`Distance from ${from} to ${to}:`, distances[from][to]);
                 }
             });
         });
 
-        // Held-Karp algorithm with the lunch constraint
+        // Initialize dp and backtrack tables
         const dp = {};
         const backtrack = {};
         const n = nodes.length;
 
-        // Initialize dp table with the starting point
+        // Initialize dp for paths directly from the start
         dp[(1 << nodes.indexOf("start")) + nodes.indexOf("start")] = 0;
 
         for (let subsetSize = 2; subsetSize <= n; subsetSize++) {
             for (const subset of combinations(nodes.slice(1), subsetSize - 1)) {
                 const bits = subset.reduce((acc, node) => acc | (1 << nodes.indexOf(node)), 1 << nodes.indexOf("start"));
                 subset.forEach(endNode => {
-                    if (endNode === "lunch" && subsetSize < 3) return; // Lunch constraint
+                    if (endNode === "lunch" && subsetSize < 3) return;
 
                     const endIndex = nodes.indexOf(endNode);
                     const prevBits = bits & ~(1 << endIndex);
@@ -183,24 +180,16 @@ function findOptimalRoute() {
                             const edgeCost = distances[prevNode][endNode];
                             const cost = dpPrevCost + edgeCost;
                             
-                            console.log(`Evaluating: from ${prevNode} to ${endNode}, dp[prevBits: ${prevBits}][prevNode: ${prevNode}] = ${dpPrevCost}, edgeCost = ${edgeCost}, totalCost = ${cost}`);
-                            
                             if (cost < minCost) {
                                 minCost = cost;
                                 bestPrev = prevNode;
                             }
-                        } else {
-                            console.warn(`Skipping: from ${prevNode} to ${endNode} - Either same node or no distance available.`);
                         }
                     });
 
-                    // Populate dp and backtrack if a valid minimum cost path was found
                     if (minCost < Infinity) {
                         dp[bits * n + endIndex] = minCost;
                         backtrack[bits * n + endIndex] = bestPrev;
-                        console.log(`Setting dp[${bits}][${endNode}] = ${minCost} via ${bestPrev}`);
-                    } else {
-                        console.warn(`No valid path found for endNode ${endNode} in subset ${subset}`);
                     }
                 });
             }
@@ -224,16 +213,14 @@ function findOptimalRoute() {
 
             bits &= ~(1 << nodes.indexOf(last));
         }
-        route.push("start"); // Add the start node at the end of backtracking
-        route.reverse(); // Reverse the order to get the route from start to end
+        route.push("start");
+        route.reverse();
 
-        console.log("Optimal Route:", route);
         document.getElementById("routeOutput").textContent = `Optimal Route: ${route.join(" -> ")}`;
     } catch (error) {
         console.error("Error in findOptimalRoute:", error);
     }
 }
-
 // Helper functions
 
 // Haversine formula for calculating distances
