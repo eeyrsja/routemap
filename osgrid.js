@@ -177,13 +177,13 @@ export function findOptimumRoutes(data) {
             resultDiv.innerHTML = `<strong>Best route with Lunch after waypoint ${lunchPosition-1}:</strong><br>${routeText}<br>${distanceText}<br>`;
             
             const drawMapButton = document.createElement("button");
-            drawMapButton.textContent = `Draw Map for Lunch at ${lunchPosition}`;
+            drawMapButton.textContent = `Draw Map`;
             drawMapButton.onclick = () => drawMap(bestRoutesByLunchPosition[lunchPosition]);
             resultDiv.appendChild(drawMapButton);
             
             const gpxButton = document.createElement("button");
-            gpxButton.textContent = `Generate GPX for Lunch at ${lunchPosition}`;
-            gpxButton.onclick = () => generateGPX(bestRoutesByLunchPosition[lunchPosition], `Optimal_Route_Lunch_Position_${lunchPosition}.gpx`);
+            gpxButton.textContent = `Generate GPX`;
+            gpxButton.onclick = () => generateGPX(bestRoutesByLunchPosition[lunchPosition], `Chameleon_LunchAfterWP${lunchPosition-1}.gpx`);
             resultDiv.appendChild(gpxButton);
             
             outputContainer.appendChild(resultDiv);
