@@ -106,12 +106,17 @@ export function findOptimumRoutes(data) {
     const end = data.end.latLon;
     const waypoints = data.waypoints;
 
-    const waypointCoords = waypoints.map(wp => wp.latLon);
+    if (!start || !lunch || !end) {
+        console.error("Invalid start, lunch, or end coordinates");
+        return;
+    }
+
+    const waypointCoords = waypoints.map(wp => wp.latLon).filter(Boolean);
     const locationNames = ["Start", ...waypoints.map(wp => wp.label), "Lunch", "End"];
     const locations = [start, ...waypointCoords, lunch, end];
     const distanceMatrix = computeDistanceMatrix(locations);
 
-    const numWaypoints = waypoints.length;
+    const numWaypoints = waypointCoords.length;
     const lunchPositions = [3, 4, 5];  // Allowed lunch positions
     const outputContainer = document.getElementById("output");
     outputContainer.innerHTML = "";  // Clear previous output
@@ -142,28 +147,30 @@ export function findOptimumRoutes(data) {
             }
         }
 
-        // Store the best route for this lunch position for map rendering
-        bestRoutesByLunchPosition[lunchPosition] = bestRoute.map(i => ({ ...locations[i], label: locationNames[i] }));
+        if (bestRoute) {
+            // Store the best route for this lunch position for map rendering
+            bestRoutesByLunchPosition[lunchPosition] = bestRoute.map(i => ({ ...locations[i], label: locationNames[i] }));
 
-        // Display route text and add buttons for drawing map and generating GPX
-        const routeText = bestRoute.map(i => locationNames[i]).join(" -> ");
-        const distanceText = `Total distance: ${(minTotalCost / 1000).toFixed(2)} km`;
-        
-        const resultDiv = document.createElement("div");
-        resultDiv.innerHTML = `<strong>Best route with Lunch at position ${lunchPosition}:</strong><br>${routeText}<br>${distanceText}<br>`;
-        
-        const drawMapButton = document.createElement("button");
-        drawMapButton.textContent = `Draw Map for Lunch at ${lunchPosition}`;
-        drawMapButton.onclick = () => drawMap(bestRoutesByLunchPosition[lunchPosition]);
-        resultDiv.appendChild(drawMapButton);
-        
-        const gpxButton = document.createElement("button");
-        gpxButton.textContent = `Generate GPX for Lunch at ${lunchPosition}`;
-        gpxButton.onclick = () => generateGPX(bestRoutesByLunchPosition[lunchPosition], `Optimal_Route_Lunch_Position_${lunchPosition}.gpx`);
-        resultDiv.appendChild(gpxButton);
-        
-        outputContainer.appendChild(resultDiv);
-        outputContainer.appendChild(document.createElement("hr"));
+            // Display route text and add buttons for drawing map and generating GPX
+            const routeText = bestRoute.map(i => locationNames[i]).join(" -> ");
+            const distanceText = `Total distance: ${(minTotalCost / 1000).toFixed(2)} km`;
+            
+            const resultDiv = document.createElement("div");
+            resultDiv.innerHTML = `<strong>Best route with Lunch at position ${lunchPosition}:</strong><br>${routeText}<br>${distanceText}<br>`;
+            
+            const drawMapButton = document.createElement("button");
+            drawMapButton.textContent = `Draw Map for Lunch at ${lunchPosition}`;
+            drawMapButton.onclick = () => drawMap(bestRoutesByLunchPosition[lunchPosition]);
+            resultDiv.appendChild(drawMapButton);
+            
+            const gpxButton = document.createElement("button");
+            gpxButton.textContent = `Generate GPX for Lunch at ${lunchPosition}`;
+            gpxButton.onclick = () => generateGPX(bestRoutesByLunchPosition[lunchPosition], `Optimal_Route_Lunch_Position_${lunchPosition}.gpx`);
+            resultDiv.appendChild(gpxButton);
+            
+            outputContainer.appendChild(resultDiv);
+            outputContainer.appendChild(document.createElement("hr"));
+        }
     });
 }
 
@@ -171,7 +178,9 @@ export function generateGPX(route, fileName) {
     let gpxContent = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="OptimalRouteGenerator" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>${fileName}</name><trkseg>\n`;
     
     route.forEach(({ lat, lon }) => {
-        gpxContent += `<trkpt lat="${lat}" lon="${lon}"><ele>0</ele><time>${new Date().toISOString()}</time></trkpt>\n`;
+        if (lat !== undefined && lon !== undefined) {
+            gpxContent += `<trkpt lat="${lat}" lon="${lon}"><ele>0</ele><time>${new Date().toISOString()}</time></trkpt>\n`;
+        }
     });
     
     gpxContent += "</trkseg></trk></gpx>";
@@ -197,15 +206,17 @@ export function drawMap(route) {
 
     const colors = { Start: 'green', Lunch: 'orange', End: 'red' };
     route.forEach((point, index) => {
-        const markerColor = colors[point.label] || 'blue';
-        const marker = L.circleMarker([point.lat, point.lon], {
-            color: markerColor,
-            radius: 5,
-            fillOpacity: 1
-        }).addTo(map);
-        marker.bindPopup(`<strong>${point.label || "Waypoint"}</strong><br>OS Grid Ref: ${point.osGridRef || "N/A"}`);
+        if (point.lat !== undefined && point.lon !== undefined) {
+            const markerColor = colors[point.label] || 'blue';
+            const marker = L.circleMarker([point.lat, point.lon], {
+                color: markerColor,
+                radius: 5,
+                fillOpacity: 1
+            }).addTo(map);
+            marker.bindPopup(`<strong>${point.label || "Waypoint"}</strong><br>OS Grid Ref: ${point.osGridRef || "N/A"}`);
+        }
     });
 
-    const routeCoords = route.map(point => [point.lat, point.lon]);
+    const routeCoords = route.filter(point => point.lat !== undefined && point.lon !== undefined).map(point => [point.lat, point.lon]);
     L.polyline(routeCoords, { color: 'blue' }).addTo(map);
 }
