@@ -135,7 +135,11 @@ function updateCompass() {
         targetPosition.lon
     );
     
-    // Calculate arrow rotation (bearing - device orientation)
+    // Calculate arrow rotation relative to device orientation
+    // When device points at target, arrow should point up (0 degrees)
+    // bearing = direction to target from north
+    // deviceOrientation = direction device is pointing from north
+    // arrowRotation = bearing - deviceOrientation
     const arrowRotation = bearing - deviceOrientation;
     
     // Update arrow
@@ -144,19 +148,26 @@ function updateCompass() {
     
     // Update distance display
     document.getElementById('distance').textContent = formatDistance(distance);
-    document.getElementById('bearing').textContent = `Bearing: ${Math.round(bearing)}°`;
+    document.getElementById('bearing').textContent = `Target: ${Math.round(bearing)}° | Phone: ${Math.round(deviceOrientation)}°`;
     
     // Update status
     const status = document.getElementById('status');
     status.className = 'success';
-    status.textContent = `Tracking: ${distance < 0.05 ? 'You have arrived!' : 'Follow the arrow'}`;
+    status.textContent = `Tracking: ${distance < 0.05 ? 'You have arrived!' : 'Point phone at target'}`;
 }
 
 // Handle device orientation
 function handleOrientation(event) {
     if (event.alpha !== null) {
-        // Adjust for compass heading (alpha is 0 at North)
-        deviceOrientation = event.webkitCompassHeading || event.alpha;
+        // Use webkitCompassHeading for iOS, or calculate from alpha for Android
+        if (event.webkitCompassHeading !== undefined) {
+            // iOS provides true heading directly
+            deviceOrientation = event.webkitCompassHeading;
+        } else if (event.alpha !== null) {
+            // Android - alpha is degrees from north, but we need to adjust
+            // alpha: 0 = North, 90 = East, 180 = South, 270 = West
+            deviceOrientation = event.alpha;
+        }
         updateCompass();
     }
 }
