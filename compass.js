@@ -162,22 +162,34 @@ function updateCompass() {
 // Handle device orientation
 function handleOrientation(event) {
     let newOrientation = null;
+    let source = '';
     
     // Try 1: webkitCompassHeading (legacy iOS Safari)
     if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
         newOrientation = event.webkitCompassHeading;
+        source = 'webkit';
     }
     // Try 2: Absolute orientation with alpha
     else if (event.absolute && event.alpha !== null) {
         newOrientation = 360 - event.alpha;
+        source = 'absolute';
     }
     // Try 3: Relative alpha (less reliable, but better than nothing)
     else if (event.alpha !== null) {
         newOrientation = (360 - event.alpha + manualCalibration) % 360;
+        source = 'relative';
     }
     
     if (newOrientation !== null) {
         deviceOrientation = newOrientation;
+        // Show source in bearing display temporarily
+        const bearingEl = document.getElementById('bearing');
+        if (bearingEl && bearingEl.textContent.includes('Target:')) {
+            const parts = bearingEl.textContent.split('|');
+            if (parts.length > 1) {
+                bearingEl.textContent = `${parts[0]}| Phone: ${Math.round(deviceOrientation)}° (${source})`;
+            }
+        }
         updateCompass();
     }
 }
