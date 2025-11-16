@@ -287,15 +287,26 @@ function handlePositionError(error) {
 // Request device orientation permission (iOS 13+)
 function requestOrientationPermission() {
     console.log('Requesting orientation permission...');
+    console.log('DeviceOrientationEvent exists:', typeof DeviceOrientationEvent !== 'undefined');
+    console.log('requestPermission function exists:', typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function');
     
     if (typeof DeviceOrientationEvent !== 'undefined' && 
         typeof DeviceOrientationEvent.requestPermission === 'function') {
         // iOS 13+ requires explicit permission
         console.log('iOS 13+ detected, requesting permission...');
-        DeviceOrientationEvent.requestPermission()
-            .then(permissionState => {
-                console.log('Orientation permission state:', permissionState);
-                if (permissionState === 'granted') {
+        
+        // Request BOTH DeviceMotionEvent and DeviceOrientationEvent permissions
+        Promise.all([
+            DeviceOrientationEvent.requestPermission(),
+            typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function' 
+                ? DeviceMotionEvent.requestPermission() 
+                : Promise.resolve('granted')
+        ])
+            .then(([orientationState, motionState]) => {
+                console.log('Orientation permission state:', orientationState);
+                console.log('Motion permission state:', motionState);
+                
+                if (orientationState === 'granted') {
                     window.addEventListener('deviceorientation', handleOrientation, true);
                     // Also try to listen for deviceorientationabsolute for compass heading
                     window.addEventListener('deviceorientationabsolute', handleOrientation, true);
@@ -333,6 +344,12 @@ function requestOrientationPermission() {
         console.log('Non-iOS or older iOS, adding orientation listener directly');
         window.addEventListener('deviceorientation', handleOrientation, true);
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        
+        const status = document.getElementById('status');
+        if (targetPosition) {
+            status.className = 'success';
+            status.textContent = 'Compass enabled';
+        }
     }
 }
 
