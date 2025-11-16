@@ -284,77 +284,8 @@ function handlePositionError(error) {
     }
 }
 
-// Request device orientation permission (iOS 13+)
-function requestOrientationPermission() {
-    console.log('Requesting orientation permission...');
-    console.log('DeviceOrientationEvent exists:', typeof DeviceOrientationEvent !== 'undefined');
-    console.log('requestPermission function exists:', typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function');
-    
-    if (typeof DeviceOrientationEvent !== 'undefined' && 
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS 13+ requires explicit permission
-        console.log('iOS 13+ detected, requesting permission...');
-        
-        // Request BOTH DeviceMotionEvent and DeviceOrientationEvent permissions
-        Promise.all([
-            DeviceOrientationEvent.requestPermission(),
-            typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function' 
-                ? DeviceMotionEvent.requestPermission() 
-                : Promise.resolve('granted')
-        ])
-            .then(([orientationState, motionState]) => {
-                console.log('Orientation permission state:', orientationState);
-                console.log('Motion permission state:', motionState);
-                
-                if (orientationState === 'granted') {
-                    window.addEventListener('deviceorientation', handleOrientation, true);
-                    // Also try to listen for deviceorientationabsolute for compass heading
-                    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-                    
-                    // Show calibrate button after a delay if compass seems flaky
-                    setTimeout(() => {
-                        if (!useGPSHeading) {
-                            const btn = document.getElementById('calibrate-btn');
-                            if (btn) btn.style.display = 'block';
-                        }
-                    }, 5000);
-                    
-                    const status = document.getElementById('status');
-                    if (targetPosition) {
-                        status.className = 'success';
-                        status.textContent = 'Compass enabled - Point phone at target';
-                    } else {
-                        status.className = 'info';
-                        status.textContent = 'Compass enabled - Enter target location';
-                    }
-                } else {
-                    const status = document.getElementById('status');
-                    status.className = 'error';
-                    status.textContent = 'Compass permission denied. Please enable in Settings > Safari > Motion & Orientation Access.';
-                }
-            })
-            .catch(err => {
-                console.error('Orientation permission error:', err);
-                const status = document.getElementById('status');
-                status.className = 'error';
-                status.textContent = 'Could not access device compass: ' + err.message;
-            });
-    } else {
-        // Non-iOS devices or older iOS versions
-        console.log('Non-iOS or older iOS, adding orientation listener directly');
-        window.addEventListener('deviceorientation', handleOrientation, true);
-        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-        
-        const status = document.getElementById('status');
-        if (targetPosition) {
-            status.className = 'success';
-            status.textContent = 'Compass enabled';
-        }
-    }
-}
-
 // Request location and orientation permissions
-function requestLocationPermission() {
+async function requestLocationPermission() {
     const status = document.getElementById('status');
     const btn = document.getElementById('enable-location-btn');
     
@@ -363,59 +294,109 @@ function requestLocationPermission() {
         btn.disabled = true;
     }
     
-    if ('geolocation' in navigator) {
-        // Request location
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                // Success - start watching position
-                currentPosition = {
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude
-                };
+    try {
+        // FIRST: Request motion/orientation permissions while still in user gesture
+        console.log('Step 1: Requesting motion/orientation permissions...');
+        
+        if (typeof DeviceMotionEvent !== 'undefined' && 
+            typeof DeviceMotionEvent.requestPermission === 'function') {
+            const motionPerm = await DeviceMotionEvent.requestPermission();
+            console.log('Motion permission:', motionPerm);
+        }
+        
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            const orientPerm = await DeviceOrientationEvent.requestPermission();
+            console.log('Orientation permission:', orientPerm);
+            
+            if (orientPerm === 'granted') {
+                window.addEventListener('deviceorientation', handleOrientation, true);
+                window.addEventListener('deviceorientationabsolute', handleOrientation, true);
                 
-                watchId = navigator.geolocation.watchPosition(
-                    handlePosition, 
-                    handlePositionError,
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 0
+                // Show calibrate button after a delay if compass seems flaky
+                setTimeout(() => {
+                    if (!useGPSHeading) {
+                        const calibrateBtn = document.getElementById('calibrate-btn');
+                        if (calibrateBtn) calibrateBtn.style.display = 'block';
                     }
-                );
-                
-                status.className = 'success';
+                }, 5000);
+            } else {
+                status.className = 'error';
+                status.textContent = 'Compass permission denied. Enable in Settings > Safari > Motion & Orientation Access.';
                 if (btn) {
-                    btn.style.display = 'none';
-                }
-                if (targetPosition) {
-                    status.textContent = 'Location enabled - Enter target above';
-                } else {
-                    status.textContent = 'Location enabled - Enter target location';
-                }
-                
-                updateCompass();
-                
-                // Now request orientation
-                requestOrientationPermission();
-            },
-            (error) => {
-                handlePositionError(error);
-                if (btn) {
-                    btn.textContent = 'Retry Location Permission';
+                    btn.textContent = 'Retry Permissions';
                     btn.disabled = false;
                 }
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
+                return;
             }
-        );
-    } else {
+        } else {
+            // Non-iOS or older iOS - just add listeners
+            console.log('No requestPermission needed, adding listeners directly');
+            window.addEventListener('deviceorientation', handleOrientation, true);
+            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        }
+        
+        // SECOND: Now request location (this can be async)
+        console.log('Step 2: Requesting location...');
+        
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    console.log('Location granted:', position);
+                    currentPosition = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude,
+                        heading: position.coords.heading
+                    };
+                    
+                    watchId = navigator.geolocation.watchPosition(
+                        handlePosition, 
+                        handlePositionError,
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 5000,
+                            maximumAge: 0
+                        }
+                    );
+                    
+                    status.className = 'success';
+                    if (btn) {
+                        btn.style.display = 'none';
+                    }
+                    status.textContent = targetPosition 
+                        ? 'All sensors enabled - Point phone at target'
+                        : 'All sensors enabled - Enter target location';
+                    
+                    updateCompass();
+                },
+                (error) => {
+                    handlePositionError(error);
+                    if (btn) {
+                        btn.textContent = 'Retry Permissions';
+                        btn.disabled = false;
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        } else {
+            status.className = 'error';
+            status.textContent = 'Geolocation is not supported by your browser.';
+            if (btn) {
+                btn.style.display = 'none';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Permission request error:', error);
         status.className = 'error';
-        status.textContent = 'Geolocation is not supported by your browser.';
+        status.textContent = 'Permission error: ' + error.message;
         if (btn) {
-            btn.style.display = 'none';
+            btn.textContent = 'Retry Permissions';
+            btn.disabled = false;
         }
     }
 }

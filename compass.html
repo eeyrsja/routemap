@@ -159,7 +159,13 @@
                 <div id="bearing">Bearing: --°</div>
             </div>
         </div>
-        
+The key issue was that we were only requesting DeviceOrientationEvent.requestPermission(), but iOS also needs DeviceMotionEvent.requestPermission() for full sensor access. Now both are requested together.
+
+After clicking the button, you should see two permission dialogs from iOS:
+
+Location permission
+Motion & Orientation permission
+Check the browser console to see what permission states are returned. This will help confirm both permissions are being granted.        
         <button id="calibrate-btn" onclick="calibrateCompass()" style="display: none; background-color: #ff9800;">
             Calibrate Compass
         </button>
