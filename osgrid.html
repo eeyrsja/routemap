@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chameleon OS Grid Planner</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        #map { height: 400px; margin-top: 20px; }
+        #map { height: 350px; margin-top: 15px; }
         .form-group { margin-bottom: 10px; }
     </style>
 	<link rel="stylesheet" href="style.css">
@@ -26,26 +26,23 @@
         <h3>Enter Locations</h3>
         <div class="form-group">
             <label>Start (OS Grid Ref):</label>
-            <input type="text" id="start" oninput="updateLatLon('start')" placeholder="e.g., SO 645 154">
+            <input type="text" id="start" oninput="formatAndUpdateGridRef('start')" placeholder="AA 111 111" autocomplete="off" autocapitalize="characters">
             <br/><span id="start-coords"></span>
-			<br/><span id="start-w3wcoords"></span>
         </div>
         <div class="form-group">
             <label>Lunch (OS Grid Ref):</label>
-            <input type="text" id="lunch" oninput="updateLatLon('lunch')" placeholder="e.g., SO 622 122">
+            <input type="text" id="lunch" oninput="formatAndUpdateGridRef('lunch')" placeholder="AA 111 111" autocomplete="off" autocapitalize="characters">
             <br/><span id="lunch-coords"></span>
-			<br/><span id="lunch-w3wcoords"></span>
         </div>
         <div class="form-group">
             <label>End (OS Grid Ref):</label>
-            <input type="text" id="end" oninput="updateLatLon('end')" placeholder="e.g., SO 654 154">
+            <input type="text" id="end" oninput="formatAndUpdateGridRef('end')" placeholder="AA 111 111" autocomplete="off" autocapitalize="characters">
             <br/><span id="end-coords"></span>
-			<br/><span id="end-w3wcoords"></span>
         </div>
         <div id="waypoints-container">
-            <label>Waypoints (OS Grid Ref):</label>
-            <button onclick="addWaypoint()">Add Waypoint</button>
+            <h3>Waypoints (OS Grid Ref)</h3>
             <div id="waypoint-inputs"></div>
+            <button onclick="addWaypoint()">Add More Waypoints</button>
         </div>
         <br/><button onclick="parseInputAndCalculate()">Calculate Optimal Routes</button>
     </div>

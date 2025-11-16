@@ -1,0 +1,17 @@
+<script type="module">
+    import OsGridRef from 'https://cdn.jsdelivr.net/npm/geodesy@2/osgridref.js';
+
+    // Define a function to convert OS Grid Reference to WGS84 Latitude/Longitude
+    function convertGridRefToLatLon(gridrefStr) {
+        const gridref = OsGridRef.parse(gridrefStr); // Parse OS Grid Reference
+        const wgs84 = gridref.toLatLon(); // Convert to WGS84
+        return wgs84.toString('d', 5); // Format with 5 decimal places
+    }
+
+    // Test the function with specific grid references
+    const gridRefs = ['SO 645 154', 'SO 650 126', 'SO 622 122'];
+    gridRefs.forEach(ref => {
+        const coords = convertGridRefToLatLon(ref);
+        console.log(`Grid Ref: ${ref} => Coordinates: ${coords}`);
+    });
+</script>

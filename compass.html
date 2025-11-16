@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chameleon Compass</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #compass-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        #compass {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin: 20px 0;
+        }
+        
+        #compass-inner {
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: white;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 120px solid #e74c3c;
+            transform-origin: 50% 80%;
+            transition: transform 0.3s ease-out;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        
+        #arrow::after {
+            content: '';
+            position: absolute;
+            top: 120px;
+            left: -20px;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid #95a5a6;
+        }
+        
+        #compass-center {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #2c3e50;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        #compass-labels {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .compass-label {
+            position: absolute;
+            font-size: 18px;
+        }
+        
+        .compass-label.north { top: 10px; left: 50%; transform: translateX(-50%); }
+        .compass-label.east { top: 50%; right: 10px; transform: translateY(-50%); }
+        .compass-label.south { bottom: 10px; left: 50%; transform: translateX(-50%); }
+        .compass-label.west { top: 50%; left: 10px; transform: translateY(-50%); }
+        
+        #distance-info {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        #distance {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+        
+        #bearing {
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+        
+        #status {
+            text-align: center;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+        
+        #status.info {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        #status.error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        #status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        @media (max-width: 600px) {
+            #compass {
+                width: 260px;
+                height: 260px;
+            }
+            
+            #compass-inner {
+                width: 240px;
+                height: 240px;
+            }
+            
+            #arrow {
+                border-left-width: 18px;
+                border-right-width: 18px;
+                border-bottom-width: 110px;
+            }
+            
+            #distance {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script type="module" src="compass.js"></script>
+    
+    <h2>Chameleon Compass</h2>
+    
+    <div>
+        <div class="form-group">
+            <label>Target Location (OS Grid Ref):</label>
+            <input type="text" id="target" oninput="formatAndUpdateTarget()" placeholder="AA 111 111" autocomplete="off" autocapitalize="characters">
+            <br/><span id="target-coords"></span>
+        </div>
+        
+        <div id="status" class="info">
+            Waiting for location permission...
+        </div>
+        
+        <div id="compass-container">
+            <div id="compass">
+                <div id="compass-inner">
+                    <div id="compass-labels">
+                        <div class="compass-label north">N</div>
+                        <div class="compass-label east">E</div>
+                        <div class="compass-label south">S</div>
+                        <div class="compass-label west">W</div>
+                    </div>
+                    <div id="arrow"></div>
+                    <div id="compass-center"></div>
+                </div>
+            </div>
+            
+            <div id="distance-info">
+                <div id="distance">-- km</div>
+                <div id="bearing">Bearing: --°</div>
+            </div>
+        </div>
+        
+        <button onclick="window.location.href='index.html'">Back to Home</button>
+    </div>
+</body>
+</html>

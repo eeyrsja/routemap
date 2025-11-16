@@ -9,12 +9,59 @@ export function addWaypoint() {
     const waypointDiv = document.createElement("div");
     waypointDiv.className = "form-group";
     waypointDiv.innerHTML = `
-        <input type="text" id="waypoint-${waypointCount}" oninput="updateLatLon('waypoint-${waypointCount}')" placeholder="e.g., SO 600 100">
+        <label>Waypoint ${waypointCount}:</label>
+        <input type="text" id="waypoint-${waypointCount}" oninput="formatAndUpdateGridRef('waypoint-${waypointCount}')" placeholder="AA 111 111" autocomplete="off" autocapitalize="characters">
+        <button onclick="removeWaypoint(${waypointCount})" class="remove-btn">Remove</button>
         <br/><span id="waypoint-${waypointCount}-coords"></span>
-		<br/><span id="waypoint-${waypointCount}-w3wcoords"></span> <!-- Added element for what3words -->
-
     `;
     document.getElementById("waypoint-inputs").appendChild(waypointDiv);
+}
+
+export function removeWaypoint(id) {
+    const input = document.getElementById(`waypoint-${id}`);
+    if (input && input.parentElement) {
+        input.parentElement.remove();
+    }
+}
+
+// Format grid reference as "AA 111 111" automatically
+export function formatAndUpdateGridRef(id) {
+    const input = document.getElementById(id);
+    const cursorPosition = input.selectionStart;
+    const value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); // Remove all non-alphanumeric
+    
+    let formatted = '';
+    let letterCount = 0;
+    
+    // Extract letters (up to 2)
+    for (let i = 0; i < value.length && letterCount < 2; i++) {
+        if (/[A-Z]/.test(value[i])) {
+            formatted += value[i];
+            letterCount++;
+        }
+    }
+    
+    // Extract digits (up to 6)
+    const digits = value.replace(/[^0-9]/g, '');
+    if (digits.length > 0) {
+        formatted += ' ' + digits.substring(0, 3);
+        if (digits.length > 3) {
+            formatted += ' ' + digits.substring(3, 6);
+        }
+    }
+    
+    // Update input value
+    const oldLength = input.value.length;
+    input.value = formatted.trim();
+    
+    // Adjust cursor position after formatting
+    const newLength = input.value.length;
+    const diff = newLength - oldLength;
+    const newCursorPosition = Math.max(0, Math.min(cursorPosition + diff, newLength));
+    input.setSelectionRange(newCursorPosition, newCursorPosition);
+    
+    // Update coordinates
+    updateLatLon(id);
 }
 
 // Convert OS Grid Reference to Lat/Lon
@@ -31,7 +78,7 @@ export function osGridToLatLon(gridrefStr) {
     }
 }
 
-export async function updateLatLon(id) {
+export function updateLatLon(id) {
     const osGridRef = document.getElementById(id).value;
     const coords = osGridToLatLon(osGridRef);
     
@@ -39,12 +86,6 @@ export async function updateLatLon(id) {
     document.getElementById(`${id}-coords`).textContent = coords 
         ? `Lat: ${coords[0].toFixed(8)}, Lon: ${coords[1].toFixed(8)}` 
         : '';
-
-    // Fetch and display what3words address asynchronously
-    if (coords) {
-        const w3w = await getWhat3Words(coords[0], coords[1]);
-        document.getElementById(`${id}-w3wcoords`).textContent = w3w ? w3w : 'No W3W address found';
-    }
 }
 
 
@@ -74,7 +115,16 @@ export function parseInputAndCalculate() {
 // Add these lines to expose functions globally
 window.updateLatLon = updateLatLon;
 window.addWaypoint = addWaypoint;
+window.removeWaypoint = removeWaypoint;
+window.formatAndUpdateGridRef = formatAndUpdateGridRef;
 window.parseInputAndCalculate = parseInputAndCalculate;
+
+// Initialize 6 waypoints on page load
+window.addEventListener('DOMContentLoaded', () => {
+    for (let i = 0; i < 6; i++) {
+        addWaypoint();
+    }
+});
 
 let bestRoutesByLunchPosition = {};  // Store best routes per lunch position for map rendering
 
@@ -241,19 +291,3 @@ export function drawMap(route) {
     L.polyline(routeCoords, { color: 'blue' }).addTo(map);
 }
 
-export async function getWhat3Words(lat, lng) {
-  const apiKey = 'CB0E4XV2'; // Replace with your actual API key
-  const url = `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${apiKey}`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.words;
-  } catch (error) {
-    console.error('Error fetching what3words address:', error);
-    return null;
-  }
-}

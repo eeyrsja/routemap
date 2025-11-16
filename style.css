@@ -32,29 +32,53 @@ h2, h3 {
 }
 
 .form-group input[type="text"] {
-    font-size: 1em;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    font-size: 1.1em;
+    padding: 12px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
     margin-bottom: 5px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.form-group input[type="text"]:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 .form-group span {
-    font-size: 0.9em;
+    font-size: 0.85em;
     color: #666;
     word-break: break-word;
+    padding: 2px 0;
 }
 
 button {
     font-size: 1em;
-    padding: 10px;
+    padding: 12px;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     background-color: #007bff;
     color: white;
     cursor: pointer;
     width: 100%;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    touch-action: manipulation;
+}
+
+.remove-btn {
+    background-color: #dc3545;
+    padding: 8px;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.remove-btn:hover {
+    background-color: #c82333;
 }
 
 button:hover {
@@ -78,25 +102,62 @@ button:hover {
 
 /* Responsive design adjustments for smaller screens */
 @media (max-width: 600px) {
+    body {
+        padding: 8px;
+    }
+
     h2 {
-        font-size: 1.4em;
+        font-size: 1.3em;
+        margin-bottom: 10px;
     }
 
     h3 {
-        font-size: 1.2em;
+        font-size: 1.1em;
+        margin: 10px 0;
     }
 
-    .form-group, #waypoints-container {
-        padding: 8px;
-        border-radius: 5px;
+    .form-group {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    .form-group label {
+        font-size: 1em;
+        font-weight: 600;
+    }
+
+    .form-group input[type="text"] {
+        font-size: 16px; /* Prevents zoom on iPhone */
+        padding: 14px;
+        border-radius: 8px;
+    }
+
+    #waypoints-container {
+        padding: 12px;
+        margin-bottom: 15px;
     }
 
     button {
-        padding: 8px;
+        padding: 14px;
+        font-size: 1em;
+        margin-bottom: 10px;
+    }
+
+    .remove-btn {
+        padding: 10px;
         font-size: 0.9em;
     }
 
     #map {
-        height: 250px;
+        height: 300px;
+        margin-top: 15px;
+    }
+
+    #output {
+        margin-top: 15px;
+    }
+
+    #output button {
+        margin: 5px 0;
     }
 }
