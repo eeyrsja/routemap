@@ -176,7 +176,7 @@ function handleOrientation(event) {
         newOrientation = (360 - event.alpha + manualCalibration) % 360;
     }
     
-    if (newOrientation !== null && !useGPSHeading) {
+    if (newOrientation !== null) {
         deviceOrientation = newOrientation;
         updateCompass();
     }
