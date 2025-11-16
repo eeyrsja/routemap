@@ -337,8 +337,10 @@ async function requestCompassPermission() {
         if (compassGranted) {
             status.className = 'success';
             status.textContent = 'Compass enabled - Now enable location';
-            if (compassBtn) compassBtn.style.display = 'none';
-            if (locationBtn) locationBtn.style.display = 'block';
+            if (compassBtn) {
+                compassBtn.textContent = '✓ Compass Enabled';
+                compassBtn.disabled = true;
+            }
         } else {
             status.className = 'error';
             status.textContent = 'Compass permission denied. Enable in Settings > Safari > Motion & Orientation Access.';
@@ -392,7 +394,10 @@ async function requestLocationPermission() {
                 );
                 
                 status.className = 'success';
-                if (btn) btn.style.display = 'none';
+                if (btn) {
+                    btn.textContent = '✓ Location Enabled';
+                    btn.disabled = true;
+                }
                 status.textContent = targetPosition 
                     ? 'All sensors enabled - Point phone at target'
                     : 'All sensors enabled - Enter target location';
