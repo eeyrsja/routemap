@@ -158,18 +158,28 @@ function updateCompass() {
 
 // Handle device orientation
 function handleOrientation(event) {
-    if (event.alpha !== null) {
-        // Use webkitCompassHeading for iOS, or calculate from alpha for Android
-        if (event.webkitCompassHeading !== undefined) {
-            // iOS provides true heading directly
-            deviceOrientation = event.webkitCompassHeading;
-        } else if (event.alpha !== null) {
-            // Android - alpha is degrees from north, but we need to adjust
-            // alpha: 0 = North, 90 = East, 180 = South, 270 = West
-            deviceOrientation = event.alpha;
-        }
-        updateCompass();
+    console.log('Orientation event:', {
+        alpha: event.alpha,
+        beta: event.beta,
+        gamma: event.gamma,
+        webkitCompassHeading: event.webkitCompassHeading,
+        absolute: event.absolute
+    });
+    
+    if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+        // iOS provides true heading directly (0-360 degrees from North)
+        deviceOrientation = event.webkitCompassHeading;
+        console.log('Using iOS compass heading:', deviceOrientation);
+    } else if (event.alpha !== null) {
+        // Android - alpha is degrees from north
+        // alpha: 0 = North, 90 = East, 180 = South, 270 = West
+        deviceOrientation = 360 - event.alpha; // Invert because alpha increases counter-clockwise
+        console.log('Using Android alpha:', deviceOrientation);
+    } else {
+        console.warn('No orientation data available');
+        return;
     }
+    updateCompass();
 }
 
 // Handle position updates
@@ -213,32 +223,44 @@ function handlePositionError(error) {
 
 // Request device orientation permission (iOS 13+)
 function requestOrientationPermission() {
+    console.log('Requesting orientation permission...');
+    
     if (typeof DeviceOrientationEvent !== 'undefined' && 
         typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS 13+ requires explicit permission
+        console.log('iOS 13+ detected, requesting permission...');
         DeviceOrientationEvent.requestPermission()
             .then(permissionState => {
+                console.log('Orientation permission state:', permissionState);
                 if (permissionState === 'granted') {
-                    window.addEventListener('deviceorientation', handleOrientation);
+                    window.addEventListener('deviceorientation', handleOrientation, true);
+                    // Also try to listen for deviceorientationabsolute for compass heading
+                    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
                     const status = document.getElementById('status');
                     if (targetPosition) {
                         status.className = 'success';
-                        status.textContent = 'Compass enabled';
+                        status.textContent = 'Compass enabled - Point phone at target';
+                    } else {
+                        status.className = 'info';
+                        status.textContent = 'Compass enabled - Enter target location';
                     }
                 } else {
                     const status = document.getElementById('status');
                     status.className = 'error';
-                    status.textContent = 'Compass permission denied. Please enable in Settings.';
+                    status.textContent = 'Compass permission denied. Please enable in Settings > Safari > Motion & Orientation Access.';
                 }
             })
             .catch(err => {
                 console.error('Orientation permission error:', err);
                 const status = document.getElementById('status');
                 status.className = 'error';
-                status.textContent = 'Could not access device compass.';
+                status.textContent = 'Could not access device compass: ' + err.message;
             });
     } else {
         // Non-iOS devices or older iOS versions
-        window.addEventListener('deviceorientation', handleOrientation);
+        console.log('Non-iOS or older iOS, adding orientation listener directly');
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
     }
 }
 
