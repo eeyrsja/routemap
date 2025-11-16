@@ -208,44 +208,113 @@ function requestOrientationPermission() {
             .then(permissionState => {
                 if (permissionState === 'granted') {
                     window.addEventListener('deviceorientation', handleOrientation);
+                    const status = document.getElementById('status');
+                    if (targetPosition) {
+                        status.className = 'success';
+                        status.textContent = 'Compass enabled';
+                    }
+                } else {
+                    const status = document.getElementById('status');
+                    status.className = 'error';
+                    status.textContent = 'Compass permission denied. Please enable in Settings.';
                 }
             })
-            .catch(console.error);
+            .catch(err => {
+                console.error('Orientation permission error:', err);
+                const status = document.getElementById('status');
+                status.className = 'error';
+                status.textContent = 'Could not access device compass.';
+            });
     } else {
         // Non-iOS devices or older iOS versions
         window.addEventListener('deviceorientation', handleOrientation);
     }
 }
 
-// Initialize
-window.addEventListener('DOMContentLoaded', () => {
-    // Request location permission and start watching position
+// Request location and orientation permissions
+function requestLocationPermission() {
+    const status = document.getElementById('status');
+    const btn = document.getElementById('enable-location-btn');
+    
+    if (btn) {
+        btn.textContent = 'Requesting permissions...';
+        btn.disabled = true;
+    }
+    
     if ('geolocation' in navigator) {
-        watchId = navigator.geolocation.watchPosition(
-            handlePosition, 
-            handlePositionError,
+        // Request location
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                // Success - start watching position
+                currentPosition = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                };
+                
+                watchId = navigator.geolocation.watchPosition(
+                    handlePosition, 
+                    handlePositionError,
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+                
+                status.className = 'success';
+                if (btn) {
+                    btn.style.display = 'none';
+                }
+                if (targetPosition) {
+                    status.textContent = 'Location enabled - Enter target above';
+                } else {
+                    status.textContent = 'Location enabled - Enter target location';
+                }
+                
+                updateCompass();
+                
+                // Now request orientation
+                requestOrientationPermission();
+            },
+            (error) => {
+                handlePositionError(error);
+                if (btn) {
+                    btn.textContent = 'Retry Location Permission';
+                    btn.disabled = false;
+                }
+            },
             {
                 enableHighAccuracy: true,
-                timeout: 5000,
+                timeout: 10000,
                 maximumAge: 0
             }
         );
-        
-        // Request orientation permission
-        requestOrientationPermission();
     } else {
-        const status = document.getElementById('status');
         status.className = 'error';
         status.textContent = 'Geolocation is not supported by your browser.';
+        if (btn) {
+            btn.style.display = 'none';
+        }
     }
-});
+}
 
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-    if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
+// Initialize
+window.addEventListener('DOMContentLoaded', () => {
+    // Don't automatically request permissions on iOS
+    // User needs to click the button to trigger permission request
+    const status = document.getElementById('status');
+    status.className = 'info';
+    
+    // Check if we're on iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (!isIOS) {
+        // On non-iOS, we can try to auto-request
+        requestLocationPermission();
     }
 });
 
 // Expose functions globally
 window.formatAndUpdateTarget = formatAndUpdateTarget;
+window.requestLocationPermission = requestLocationPermission;
