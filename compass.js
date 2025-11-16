@@ -5,6 +5,9 @@ let currentPosition = null;
 let targetPosition = null;
 let watchId = null;
 let deviceOrientation = 0;
+let lastPosition = null;
+let useGPSHeading = false;
+let manualCalibration = 0;
 
 // Convert OS Grid Reference to Lat/Lon
 function osGridToLatLon(gridrefStr) {
@@ -148,7 +151,12 @@ function updateCompass() {
     
     // Update distance display
     document.getElementById('distance').textContent = formatDistance(distance);
-    document.getElementById('bearing').textContent = `Target: ${Math.round(bearing)}° | Phone: ${Math.round(deviceOrientation)}°`;
+    
+    let bearingText = `Target: ${Math.round(bearing)}° | Phone: ${Math.round(deviceOrientation)}°`;
+    if (useGPSHeading) {
+        bearingText += ' (GPS)';
+    }
+    document.getElementById('bearing').textContent = bearingText;
     
     // Update status
     const status = document.getElementById('status');
@@ -158,41 +166,96 @@ function updateCompass() {
 
 // Handle device orientation
 function handleOrientation(event) {
-    console.log('Orientation event:', {
-        alpha: event.alpha,
-        beta: event.beta,
-        gamma: event.gamma,
-        webkitCompassHeading: event.webkitCompassHeading,
-        absolute: event.absolute
-    });
+    let newOrientation = null;
+    let method = 'none';
     
+    // Try 1: webkitCompassHeading (legacy iOS Safari)
     if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
-        // iOS provides true heading directly (0-360 degrees from North)
-        deviceOrientation = event.webkitCompassHeading;
-        console.log('Using iOS compass heading:', deviceOrientation);
-    } else if (event.alpha !== null) {
-        // Android - alpha is degrees from north
-        // alpha: 0 = North, 90 = East, 180 = South, 270 = West
-        deviceOrientation = 360 - event.alpha; // Invert because alpha increases counter-clockwise
-        console.log('Using Android alpha:', deviceOrientation);
-    } else {
-        console.warn('No orientation data available');
-        return;
+        newOrientation = event.webkitCompassHeading;
+        method = 'webkitCompassHeading';
     }
-    updateCompass();
+    // Try 2: Absolute orientation with alpha
+    else if (event.absolute && event.alpha !== null) {
+        // Absolute alpha gives heading from north, but rotates opposite direction
+        newOrientation = 360 - event.alpha;
+        method = 'absolute alpha';
+    }
+    // Try 3: Relative alpha (less reliable, but better than nothing)
+    else if (event.alpha !== null) {
+        // Relative orientation - apply manual calibration
+        newOrientation = (360 - event.alpha + manualCalibration) % 360;
+        method = 'relative alpha + calibration';
+    }
+    
+    if (newOrientation !== null && !useGPSHeading) {
+        deviceOrientation = newOrientation;
+        updateCompass();
+        
+        // Update status to show which method is working
+        const status = document.getElementById('status');
+        if (targetPosition && status.className === 'success') {
+            status.textContent = `Tracking (${method})`;
+        }
+    }
+}
+
+// Calculate heading from GPS movement (course over ground)
+function calculateGPSHeading(oldPos, newPos) {
+    if (!oldPos || !newPos) return null;
+    
+    const lat1 = oldPos.lat * Math.PI / 180;
+    const lat2 = newPos.lat * Math.PI / 180;
+    const lon1 = oldPos.lon * Math.PI / 180;
+    const lon2 = newPos.lon * Math.PI / 180;
+    
+    const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+    const heading = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    
+    return heading;
 }
 
 // Handle position updates
 function handlePosition(position) {
-    currentPosition = {
+    const newPos = {
         lat: position.coords.latitude,
-        lon: position.coords.longitude
+        lon: position.coords.longitude,
+        heading: position.coords.heading // GPS heading if available
     };
+    
+    // Try to use GPS heading if device orientation isn't working
+    if (position.coords.heading !== null && position.coords.heading !== undefined) {
+        // GPS provides course over ground when moving
+        deviceOrientation = position.coords.heading;
+        useGPSHeading = true;
+    } else if (currentPosition && lastPosition) {
+        // Calculate heading from movement
+        const distance = calculateDistance(
+            lastPosition.lat, lastPosition.lon,
+            newPos.lat, newPos.lon
+        );
+        
+        // Only use GPS heading if moving more than 5 meters
+        if (distance > 0.005) {
+            const heading = calculateGPSHeading(lastPosition, newPos);
+            if (heading !== null) {
+                deviceOrientation = heading;
+                useGPSHeading = true;
+            }
+        }
+    }
+    
+    lastPosition = currentPosition;
+    currentPosition = newPos;
     
     const status = document.getElementById('status');
     if (targetPosition) {
         status.className = 'success';
-        status.textContent = 'Location acquired';
+        if (useGPSHeading) {
+            status.textContent = 'Using GPS heading - Keep moving';
+        } else {
+            status.textContent = 'Location acquired';
+        }
     } else {
         status.className = 'info';
         status.textContent = 'Enter target location above';
@@ -236,6 +299,15 @@ function requestOrientationPermission() {
                     window.addEventListener('deviceorientation', handleOrientation, true);
                     // Also try to listen for deviceorientationabsolute for compass heading
                     window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                    
+                    // Show calibrate button after a delay if compass seems flaky
+                    setTimeout(() => {
+                        if (!useGPSHeading) {
+                            const btn = document.getElementById('calibrate-btn');
+                            if (btn) btn.style.display = 'block';
+                        }
+                    }, 5000);
+                    
                     const status = document.getElementById('status');
                     if (targetPosition) {
                         status.className = 'success';
@@ -348,6 +420,32 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Calibrate compass manually
+function calibrateCompass() {
+    if (!targetPosition || !currentPosition) {
+        alert('Please enter a target location and ensure GPS is working first.');
+        return;
+    }
+    
+    const targetBearing = calculateBearing(
+        currentPosition.lat,
+        currentPosition.lon,
+        targetPosition.lat,
+        targetPosition.lon
+    );
+    
+    // Calculate calibration offset
+    // Assume user is currently pointing phone at target
+    manualCalibration = (targetBearing - deviceOrientation + 360) % 360;
+    
+    alert(`Compass calibrated! Point your phone at the target and press OK.\nCalibration offset: ${Math.round(manualCalibration)}°`);
+    
+    const status = document.getElementById('status');
+    status.className = 'success';
+    status.textContent = 'Compass calibrated - Manual mode';
+}
+
 // Expose functions globally
 window.formatAndUpdateTarget = formatAndUpdateTarget;
 window.requestLocationPermission = requestLocationPermission;
+window.calibrateCompass = calibrateCompass;
