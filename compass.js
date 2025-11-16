@@ -151,7 +151,7 @@ function updateCompass() {
     
     // Update distance display
     document.getElementById('distance').textContent = formatDistance(distance);
-    document.getElementById('bearing').textContent = `Bearing: ${Math.round(bearing)}°`;
+    document.getElementById('bearing').textContent = `Target: ${Math.round(bearing)}° | Phone: ${Math.round(deviceOrientation)}°`;
     
     // Update status
     const status = document.getElementById('status');
@@ -200,49 +200,11 @@ function calculateGPSHeading(oldPos, newPos) {
 
 // Handle position updates
 function handlePosition(position) {
-    const newPos = {
+    currentPosition = {
         lat: position.coords.latitude,
         lon: position.coords.longitude,
-        heading: position.coords.heading // GPS heading if available
+        heading: position.coords.heading
     };
-    
-    // Try to use GPS heading if device orientation isn't working
-    if (position.coords.heading !== null && position.coords.heading !== undefined) {
-        // GPS provides course over ground when moving
-        deviceOrientation = position.coords.heading;
-        useGPSHeading = true;
-    } else if (currentPosition && lastPosition) {
-        // Calculate heading from movement
-        const distance = calculateDistance(
-            lastPosition.lat, lastPosition.lon,
-            newPos.lat, newPos.lon
-        );
-        
-        // Only use GPS heading if moving more than 5 meters
-        if (distance > 0.005) {
-            const heading = calculateGPSHeading(lastPosition, newPos);
-            if (heading !== null) {
-                deviceOrientation = heading;
-                useGPSHeading = true;
-            }
-        }
-    }
-    
-    lastPosition = currentPosition;
-    currentPosition = newPos;
-    
-    const status = document.getElementById('status');
-    if (targetPosition) {
-        status.className = 'success';
-        if (useGPSHeading) {
-            status.textContent = 'Using GPS heading - Keep moving';
-        } else {
-            status.textContent = 'Location acquired';
-        }
-    } else {
-        status.className = 'info';
-        status.textContent = 'Enter target location above';
-    }
     
     updateCompass();
 }
@@ -357,8 +319,8 @@ async function requestLocationPermission() {
                 handlePositionError,
                 {
                     enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
+                    timeout: 2000,
+                    maximumAge: 500
                 }
             );
             
